@@ -1,0 +1,35 @@
+{
+	"radiant": true,
+	"weight": 0,
+	"abandonable": false,
+	"repeatable": false,
+	"color": {
+		"r": 167,
+		"g": 255,
+		"b": 66
+	},
+	"activeStage": 10,
+	"stages": [
+		{
+			"stage": 0,
+			"nextStage": 10,
+			"objectives": [
+				"BLOCKER"
+			],
+			"actions": []
+		},
+		{
+			"stage": 10,
+			"nextStage": -1,
+			"objectives": [
+				"APRICORN_HARVEST item=pixelmon:red_apricorn count=1"
+			],
+			"actions": [
+				"0 LOCALIZED_MESSAGE quest.pick_apricorn.message",
+				"0 ITEM_GIVE item=pixelmon:wooden_hammer amount=1",
+				"0 SET_STAGE 10 Craft Poke Ball.json"
+			]
+		}
+	],
+	"strings": {}
+}

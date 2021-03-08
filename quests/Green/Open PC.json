@@ -1,0 +1,35 @@
+{
+	"radiant": true,
+	"weight": 0,
+	"abandonable": false,
+	"repeatable": false,
+	"color": {
+		"r": 167,
+		"g": 255,
+		"b": 66
+	},
+	"activeStage": 10,
+	"stages": [
+		{
+			"stage": 0,
+			"nextStage": 10,
+			"objectives": [
+				"BLOCKER"
+			],
+			"actions": []
+		},
+		{
+			"stage": 10,
+			"nextStage": -1,
+			"objectives": [
+				"BLOCK_USE item=pixelmon:healer count=1"
+			],
+			"actions": [
+				"0 LOCALIZED_MESSAGE quest.open_pc.message",
+				"0 ITEM_GIVE item=minecraft:redstone_lamp amount=1",
+				"0 SET_STAGE 10 Craft PC.json"
+			]
+		}
+	],
+	"strings": {}
+}

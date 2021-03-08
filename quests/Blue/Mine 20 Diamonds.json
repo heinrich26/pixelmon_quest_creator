@@ -1,0 +1,50 @@
+{
+	"radiant": true,
+	"weight": 0,
+	"abandonable": true,
+	"repeatable": true,
+	"color": {
+		"r": 15,
+		"g": 131,
+		"b": 255
+	},
+	"activeStage": 10,
+	"stages": [
+		{
+			"stage": 0,
+			"nextStage": 10,
+			"objectives": [
+				"DIALOGUE #!NPC,Time,0.05,100,0,12000 name=npcName text=start choice=startYes choice=startNo",
+				"NPC_RESPOND NPC0 0",
+				"NPC_RESPOND NPC0 1"
+			],
+			"actions": [
+				"1 DIALOGUE name=npcName text=accepted choice=goodbye",
+				"1 SET_STAGE 10",
+				"2 DIALOGUE name=npcName text=rejected choice=goodbye"
+			]
+		},
+		{
+			"stage": 10,
+			"nextStage": 20,
+			"objectives": [
+				"BLOCK_BREAK item=minecraft:diamond_ore count=20"
+			],
+			"actions": []
+		},
+		{
+			"stage": 20,
+			"nextStage": -1,
+			"objectives": [
+				"DIALOGUE NPC0 name=npcName text=end choice=Goodbye",
+				"NPC_TALK NPC0"
+			],
+			"actions": [
+				"1 ITEM_GIVE item=minecraft:diamond amount=3",
+				"1 END_DIALOGUE",
+				"1 COMPLETE_QUEST"
+			]
+		}
+	],
+	"strings": {}
+}

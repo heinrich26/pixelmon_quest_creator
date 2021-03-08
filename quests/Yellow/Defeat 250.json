@@ -1,0 +1,49 @@
+{
+	"radiant": true,
+	"weight": 0,
+	"abandonable": true,
+	"repeatable": false,
+	"color": {
+		"r": 255,
+		"g": 217,
+		"b": 0
+	},
+	"activeStage": 10,
+	"stages": [
+		{
+			"stage": 0,
+			"nextStage": 10,
+			"objectives": [
+				"DIALOGUE #!NPC,Time,0.05,100,0,12000 name=npcName text=start choice=startYes choice=startNo",
+				"NPC_RESPOND NPC0 0",
+				"NPC_RESPOND NPC0 1"
+			],
+			"actions": [
+				"1 DIALOGUE name=npcName text=accepted choice=goodbye",
+				"1 SET_STAGE 10",
+				"2 DIALOGUE name=npcName text=rejected choice=goodbye"
+			]
+		},
+		{
+			"stage": 10,
+			"nextStage": 20,
+			"objectives": [
+				"POKEMON_DEFEAT #!Types,any,any,any 250"
+			],
+			"actions": []
+		},
+		{
+			"stage": 20,
+			"nextStage": -1,
+			"objectives": [
+				"DIALOGUE NPC0 name=npcName text=end choice=goodbye",
+				"NPC_TALK NPC0"
+			],
+			"actions": [
+				"1 ITEM_GIVE item=minecraft:nether_star amount=1",
+				"1 COMPLETE_QUEST"
+			]
+		}
+	],
+	"strings": {}
+}

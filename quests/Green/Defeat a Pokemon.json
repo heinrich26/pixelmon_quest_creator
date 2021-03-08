@@ -1,0 +1,34 @@
+{
+	"radiant": true,
+	"weight": 0,
+	"abandonable": false,
+	"repeatable": false,
+	"color": {
+		"r": 167,
+		"g": 255,
+		"b": 66
+	},
+	"activeStage": 10,
+	"stages": [
+		{
+			"stage": 0,
+			"nextStage": 10,
+			"objectives": [
+				"BLOCKER"
+			],
+			"actions": []
+		},
+		{
+			"stage": 10,
+			"nextStage": -1,
+			"objectives": [
+				"POKEMON_DEFEAT #!Types,Water;Grass;Fire,any,any 3"
+			],
+			"actions": [
+				"0 LOCALIZED_MESSAGE quest.defeat_a_pokemon.message",
+				"0 ITEM_GIVE item=pixelmon:pp_up amount=1"
+			]
+		}
+	],
+	"strings": {}
+}

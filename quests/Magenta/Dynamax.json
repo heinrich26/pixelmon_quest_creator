@@ -1,0 +1,119 @@
+{
+	"radiant": true,
+	"weight": 0,
+	"abandonable": true,
+	"repeatable": false,
+	"color": {
+		"r": 229,
+		"g": 24,
+		"b": 240
+	},
+	"activeStage": 10,
+	"stages": [
+		{
+			"stage": 0,
+			"nextStage": 1,
+			"objectives": [
+				"DIALOGUE #!NPC,Time,0.05,100,0 name=npcName text=start choice=startYes choice=startNo",
+				"NPC_RESPOND NPC0 0",
+				"NPC_RESPOND NPC0 1"
+			],
+			"actions": [
+				"1 SET_STAGE 1",
+				"2 DIALOGUE name=npcName text=rejected choice=goodbye"
+			]
+		},
+		{
+			"stage": 1,
+			"nextStage": 2,
+			"objectives": [
+				"DIALOGUE NPC0 name=npcName text=talkA choice=continueA",
+				"NPC_TALK NPC0"
+			],
+			"actions": [
+				"1 SET_STAGE 2"
+			]
+		},
+		{
+			"stage": 2,
+			"nextStage": 3,
+			"objectives": [
+				"DIALOGUE NPC0 name=npcName text=talkB choice=continueB",
+				"NPC_TALK NPC0"
+			],
+			"actions": [
+				"1 SET_STAGE 3"
+			]
+		},
+		{
+			"stage": 3,
+			"nextStage": 10,
+			"objectives": [
+				"DIALOGUE NPC0 name=npcName text=talkC choice=continueC",
+				"NPC_TALK NPC0"
+			],
+			"actions": [
+				"1 SET_STAGE 10",
+				"1 DIALOGUE name=npcName text=startQuest choice=goodbye"
+			]
+		},
+		{
+			"stage": 10,
+			"nextStage": 20,
+			"objectives": [
+				"POKEMON_DEFEAT any 75",
+				"POKEMON_CAPTURE any 25"
+			],
+			"actions": [
+				"+0,1 LOCALIZED_MESSAGE quest.dynamax.message.a"
+			]
+		},
+		{
+			"stage": 20,
+			"nextStage": 30,
+			"objectives": [
+				"DIALOGUE NPC0 name=npcName text=middle choice=middleOK",
+				"NPC_TALK NPC0"
+			],
+			"actions": [
+				"1 SET_STAGE 30",
+				"1 END_DIALOGUE"
+			]
+		},
+		{
+			"stage": 30,
+			"nextStage": 40,
+			"objectives": [
+				"TRAINER_DEFEAT 25"
+			],
+			"actions": [
+				"0 LOCALIZED_MESSAGE quest.dynamax.message.b"
+			]
+		},
+		{
+			"stage": 40,
+			"nextStage": 41,
+			"objectives": [
+				"DIALOGUE NPC0 name=npcName text=endA choice=endAChoice",
+				"NPC_TALK NPC0"
+			],
+			"actions": [
+				"1 SET_STAGE 41"
+			]
+		},
+		{
+			"stage": 41,
+			"nextStage": -1,
+			"objectives": [
+				"DIALOGUE NPC0 name=npcName text=endB choice=goodbye",
+				"NPC_TALK NPC0"
+			],
+			"actions": [
+				"1 COMPLETE_QUEST",
+				"1 END_DIALOGUE",
+				"1 KEY_ITEM DynamaxBand"
+			]
+		}
+	],
+	"strings": {}
+}

@@ -1,0 +1,62 @@
+{
+	"radiant": true,
+	"weight": 0,
+	"abandonable": true,
+	"repeatable": false,
+	"color": {
+		"r": 255,
+		"g": 217,
+		"b": 0
+	},
+	"activeStage": 10,
+	"stages": [
+		{
+			"stage": 0,
+			"nextStage": 10,
+			"objectives": [
+				"DIALOGUE #!NPC,Time,0.05,100,0,12000 name=npcName text=start choice=startYes choice=startNo",
+				"NPC_RESPOND NPC0 0",
+				"NPC_RESPOND NPC0 1"
+			],
+			"actions": [
+				"1 DIALOGUE name=npcName text=accepted choice=goodbye",
+				"1 SET_STAGE 10",
+				"2 DIALOGUE name=npcName text=rejected choice=goodbye"
+			]
+		},
+		{
+			"stage": 10,
+			"nextStage": 20,
+			"objectives": [
+				"DIMENSION 72"
+			],
+			"actions": []
+		},
+		{
+			"stage": 20,
+			"nextStage": -1,
+			"objectives": [
+				"DIALOGUE NPC0 name=npcName text=end choice=goodbye",
+				"NPC_TALK NPC0"
+			],
+			"actions": [
+				"1 ITEM_GIVE item=pixelmon:beast_ball amount=5",
+				"1 COMPLETE_QUEST"
+			]
+		}
+	],
+	"strings": {
+		"name": "Voyager",
+		"desc-10": "An Ultra Recon Squad Agent wants you to travel to Ultra Space.",
+		"desc-20": "Now you have visited Ultra Space, you should go and tell the Ultra Recon Squad Agent all about it!",
+		"desc-X": "You visited Ultra Space, and were given the means to befriend the unusual denizens of the dimension as a reward!",
+		"npcName": "Ultra Recon Squad Agent",
+		"start": "Can you visit Ultra Space and divulge information to me about it afterwards?",
+		"startYes": "Yes, I can!",
+		"startNo": "I'm a little busy...",
+		"stage-10-0": "Visit Ultra Space",
+		"stage-20-0": "Return to the Ultra Recon Squad Agent",
+		"end": "Data extracted! Here, take these!",
+		"goodbye": "Goodbye"
+	}
+}

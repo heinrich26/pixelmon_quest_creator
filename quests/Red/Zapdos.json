@@ -1,0 +1,123 @@
+{
+	"radiant": true,
+	"weight": 0,
+	"abandonable": true,
+	"repeatable": false,
+	"color": {
+		"r": 255,
+		"g": 68,
+		"b": 43
+	},
+	"activeStage": 10,
+	"stages": [
+		{
+			"stage": 0,
+			"nextStage": 1,
+			"objectives": [
+				"DIALOGUE #!NPC,Time,0.01,100,0 name=npcName text=start choice=startYes choice=startNo",
+				"NPC_RESPOND NPC0 0",
+				"NPC_RESPOND NPC0 1"
+			],
+			"actions": [
+				"1 SET_STAGE 1",
+				"2 DIALOGUE name=npcName text=rejected choice=goodbye"
+			]
+		},
+		{
+			"stage": 1,
+			"nextStage": 2,
+			"objectives": [
+				"DIALOGUE NPC0 name=npcName text=talkA choice=continueA",
+				"NPC_TALK NPC0"
+			],
+			"actions": [
+				"1 SET_STAGE 2"
+			]
+		},
+		{
+			"stage": 2,
+			"nextStage": 3,
+			"objectives": [
+				"DIALOGUE NPC0 name=npcName text=talkB choice=continueB",
+				"NPC_TALK NPC0"
+			],
+			"actions": [
+				"1 SET_STAGE 3"
+			]
+		},
+		{
+			"stage": 3,
+			"nextStage": 10,
+			"objectives": [
+				"DIALOGUE NPC0 name=npcName text=talkC choice=continueC",
+				"NPC_TALK NPC0"
+			],
+			"actions": [
+				"1 SET_STAGE 10"
+			]
+		},
+		{
+			"stage": 10,
+			"nextStage": 20,
+			"objectives": [
+				"ITEM_PICKUP item=pixelmon:orb count=1"
+			],
+			"actions": [
+				"0 LOCALIZED_MESSAGE quest.zapdos.message.a"
+			]
+		},
+		{
+			"stage": 20,
+			"nextStage": 30,
+			"objectives": [
+				"ITEM_CRAFT item=pixelmon:dos_orb count=1"
+			],
+			"actions": [
+				"0 LOCALIZED_MESSAGE quest.zapdos.message.b"
+			]
+		},
+		{
+			"stage": 30,
+			"nextStage": 40,
+			"objectives": [
+				"POKEMON_DEFEAT any 375"
+			],
+			"actions": [
+				"0 LOCALIZED_MESSAGE quest.zapdos.message.c"
+			]
+		},
+		{
+			"stage": 40,
+			"nextStage": 50,
+			"objectives": [
+				"TILEENTITY_VICINITY TileEntityShrine 10"
+			],
+			"actions": [
+				"0 LOCALIZED_MESSAGE quest.zapdos.message.d"
+			]
+		},
+		{
+			"stage": 50,
+			"nextStage": 60,
+			"objectives": [
+				"POKEMON_CAPTURE Zapdos 1"
+			],
+			"actions": [
+				"0 LOCALIZED_MESSAGE quest.zapdos.message.e"
+			]
+		},
+		{
+			"stage": 60,
+			"nextStage": -1,
+			"objectives": [
+				"DIALOGUE NPC0 name=npcName text=end choice=goodbye",
+				"NPC_TALK NPC0"
+			],
+			"actions": [
+				"1 ITEM_GIVE item=minecraft:diamond_block",
+				"1 COMPLETE_QUEST"
+			]
+		}
+	],
+	"strings": {}
+}

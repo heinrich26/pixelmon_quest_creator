@@ -1,0 +1,91 @@
+{
+	"radiant": true,
+	"weight": 0,
+	"abandonable": true,
+	"repeatable": false,
+	"color": {
+		"r": 255,
+		"g": 68,
+		"b": 43
+	},
+	"activeStage": 10,
+	"stages": [
+		{
+			"stage": 0,
+			"nextStage": 1,
+			"objectives": [
+				"DIALOGUE #!NPC,Time,0.001,100,0 name=npcName text=start choice=startYes choice=startNo",
+				"NPC_RESPOND NPC0 0",
+				"NPC_RESPOND NPC0 1"
+			],
+			"actions": [
+				"1 SET_STAGE 1",
+				"2 DIALOGUE name=npcName text=rejected choice=goodbye"
+			]
+		},
+		{
+			"stage": 1,
+			"nextStage": 2,
+			"objectives": [
+				"DIALOGUE NPC0 name=npcName text=talkA choice=continueA",
+				"NPC_TALK NPC0"
+			],
+			"actions": [
+				"1 SET_STAGE 2"
+			]
+		},
+		{
+			"stage": 2,
+			"nextStage": 3,
+			"objectives": [
+				"DIALOGUE NPC0 name=npcName text=talkB choice=continueB",
+				"NPC_TALK NPC0"
+			],
+			"actions": [
+				"1 SET_STAGE 3"
+			]
+		},
+		{
+			"stage": 3,
+			"nextStage": 10,
+			"objectives": [
+				"DIALOGUE NPC0 name=npcName text=talkC choice=continueC",
+				"NPC_TALK NPC0"
+			],
+			"actions": [
+				"1 SET_STAGE 10"
+			]
+		},
+		{
+			"stage": 10,
+			"nextStage": 20,
+			"objectives": [
+				"POKEMON_DEFEAT form:alter 1"
+			],
+			"actions": []
+		},
+		{
+			"stage": 20,
+			"nextStage": 30,
+			"objectives": [
+				"RANDOM 1:0 99:1"
+			],
+			"actions": [
+				"0 SET_STAGE 30",
+				"1 SET_STAGE 10"
+			]
+		},
+		{
+			"stage": 30,
+			"nextStage": -1,
+			"objectives": [
+				"FOLLOWTHROUGH"
+			],
+			"actions": [
+				"0 LOCALIZED_MESSAGE quest.galarian_articuno.message",
+				"0 POKEMON_SPAWN r20 ~10 r20 Articuno form:galarian level:70"
+			]
+		}
+	],
+	"strings": {}
+}

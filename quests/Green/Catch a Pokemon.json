@@ -1,0 +1,36 @@
+{
+	"radiant": true,
+	"weight": 0,
+	"abandonable": false,
+	"repeatable": false,
+	"color": {
+		"r": 167,
+		"g": 255,
+		"b": 66
+	},
+	"activeStage": 10,
+	"stages": [
+		{
+			"stage": 0,
+			"nextStage": 10,
+			"objectives": [
+				"BLOCKER"
+			],
+			"actions": []
+		},
+		{
+			"stage": 10,
+			"nextStage": -1,
+			"objectives": [
+				"POKEMON_CAPTURE #!Types,Water;Grass;Fire,any,any 1"
+			],
+			"actions": [
+				"0 LOCALIZED_MESSAGE quest.catch_a_pokemon.message",
+				"0 ITEM_GIVE item=pixelmon:rare_candy amount=1",
+				"0 SET_STAGE 10 Defeat a Pokemon.json",
+				"0 SET_STAGE 10 Open PC.json"
+			]
+		}
+	],
+	"strings": {}
+}

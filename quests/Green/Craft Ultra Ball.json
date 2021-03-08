@@ -1,0 +1,35 @@
+{
+	"radiant": true,
+	"weight": 0,
+	"abandonable": false,
+	"repeatable": false,
+	"color": {
+		"r": 167,
+		"g": 255,
+		"b": 66
+	},
+	"activeStage": 10,
+	"stages": [
+		{
+			"stage": 0,
+			"nextStage": 10,
+			"objectives": [
+				"BLOCKER"
+			],
+			"actions": []
+		},
+		{
+			"stage": 10,
+			"nextStage": -1,
+			"objectives": [
+				"ITEM_CRAFT item=pixelmon:ultra_ball count=1"
+			],
+			"actions": [
+				"0 LOCALIZED_MESSAGE quest.craft_ultra_ball.message",
+				"0 ITEM_GIVE item=pixelmon:gold_ore amount=3",
+				"0 SET_STAGE 10 Find Master Ball.json"
+			]
+		}
+	],
+	"strings": {}
+}
