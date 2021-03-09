@@ -6,26 +6,114 @@ from tkinter import filedialog
 from PIL import Image, ImageTk
 from tooltip_class import CreateToolTip
 import json
+from uuid import UUID
+import string
 stages = []
 final = {}
 
 objective_names = [
+	"ABSOLUTE_POSITION",
+	"APRICORN_HARVEST",
+	"BATTLE_MOVE_TARGET",
+	"BATTLE_MOVE_USER",
+	"BLOCK_BREAK",
 	"BLOCKER",
+	"BLOCK_PLACE",
+	"BLOCK_USE",
 	"DIALOGUE",
-	"CAR",
-	"BANANA",
-	"FISH",
+	"DIMENSION",
+	"ENTITY_INTERACT",
+	"ENTITY_VICINITY",
+	"FOLLOWTHROUGH",
+	"ITEM_CRAFT",
+	"ITEM_DROP",
+	"ITEM_PICKUP",
+	"ITEM_SMELT",
+	"ITEM_USE",
+	"NPC_RESPOND",
+	"POKEMON_CAPTURE",
+	"POKEMON_DEFEAT",
+	"POKEMON_EVOLVE_POST",
+	"POKEMON_EVOLVE_PRE",
+	"POKEMON_HAS",
+	"POKEMON_HATCH",
+	"POKEMON_TRADE_GET",
+	"POKEMON_TRADE_GIVE",
+	"RANDOM",
+	"SERVER_TIME",
+	"STRUCTURE",
+	"TILEENTITY_VICINITY",
+	"WORLD_TIME"
 ]
 objective_data_req = [
+	"<x1> <z1> <x2> <z2> <dimension>",
+	"item=[mod:]%s count=int",	
+	"soundbase=true|false; count=int; category=physical|special|status;\ntype=<any of the 17 types>;\nmove=<attack name>,<attack name>,<attack name>,<attack name>; result=<proceed|hit|ignore|killed|succeeded|charging|unable|failed|missed|notarget>;\ndamage[=|</>]int; fulldamage[=|</>]int; accuracy[=|</>]int",
 	[],
-	["entity", "name=%s", "text=%s"],
+	[],
+	[],
+	[],
+	[],
+	"<entity> name=%s text=%s",
+	[],
+	[],
+	[],
+	[],
+	[],
+	[],
+	[],
+	[],
+	[],
+	[],
+	[],
+	[],
+	[],
+	[],
+	[],
+	[],
+	[],
+	[],
+	[],
+	[],
 	[],
 	[],
 	[]
 ]
+
+objective_data_req[3]=objective_data_req[2]
+objective_data_req[4]=objective_data_req[1]
+
+
 objective_data_opt = [
+	"<y1> at pos2; <y2> at pos5",
+	"multiple tag=%s, name=%s &/or damage=int",
 	[],
-	["choice=%s"],
+	[],
+	[],
+	[],
+	[],
+	[],
+	"multiple choice=%s",
+	[],
+	[],
+	[],
+	[],
+	[],
+	[],
+	[],
+	[],
+	[],
+	[],
+	[],
+	[],
+	[],
+	[],
+	[],
+	[],
+	[],
+	[],
+	[],
+	[],
 	[],
 	[],
 	[]
@@ -84,10 +172,8 @@ class Stage:
 		style.configure('Red.TEntry', foreground="orange red")
 	
 	def chance_validation(self, new_number, widget):
-		print(new_number + "1")
 		if new_number == "":
-			root.nametowidget(widget).delete(0,END)
-			root.nametowidget(widget).insert(0,0.0)
+			root.nametowidget(widget).set(0.0)
 			return True
 		try:
 			float(new_number)
@@ -99,9 +185,6 @@ class Stage:
 		else: 
 			root.nametowidget(widget)['style'] = 'Red.TEntry'
 		return True
-
-
-
 			
 	def move_up(self):
 		index = stages.index(self)
@@ -123,7 +206,7 @@ class Stage:
 	def refresh_id(self):
 		self.stage.set(stages.index(self)*10)
 		self.container.grid(row=self.stage.get())
-		if stages.index(self) == len(stages):
+		if stages.index(self) == len(stages)-1:
 			self.nextStage = -1
 		else:
 			self.nextStage = stages.index(self)*10+10
@@ -142,28 +225,29 @@ class Stage:
 			self.delete_button['state'] = 'normal'
 		
 	def new_objective(self):
-		this_w = 500
-		this_h = 120
+		this_w = 650
+		this_h = 200
 		self.edit_window = Toplevel(self.objectives_box)
 		self.edit_window.grab_set()
 		self.edit_window.title("Choose Objective Type:")
 		self.edit_window.geometry('%dx%d+%d+%d' % (this_w, this_h, int(max(master.winfo_x()+(master.winfo_width()-this_w)/2, 0)), int(max(master.winfo_y()+(master.winfo_height()-this_h)/2, 0))))
 		self.edit_window.columnconfigure(0, minsize=120)
-		self.edit_window.columnconfigure(1, minsize=150)
+		self.edit_window.columnconfigure((1,2), minsize=150, weight=1)
+		self.edit_window.rowconfigure(3, weight=1)
 		ttk.Label(self.edit_window, text="Objective:").grid(row=0)
 		ttk.Label(self.edit_window, text="Required Arguments:").grid(row=0, column=1, sticky=W)
 		ttk.Label(self.edit_window, text="Optional Arguments:").grid(row=0, column=2, sticky=W)
 		self.var = StringVar(self.edit_window)
-		self.var.set(objective_names[0])
-		self.obj_type = ttk.OptionMenu(self.edit_window, self.var, objective_names[0], *objective_names)
-		self.obj_type.grid(row=1)
+		self.var.set(objective_names[5])
+		self.obj_type = ttk.OptionMenu(self.edit_window, self.var, objective_names[5], *objective_names)
+		self.obj_type.grid(row=1, sticky=N+E+W, padx=(4,2))
 		self.options_req = StringVar()
 		self.options_opt = StringVar()
-		ttk.Label(self.edit_window, textvariable=self.options_req, justify=LEFT, wraplength=146).grid(row=1, column=1, sticky=W)
+		ttk.Label(self.edit_window, textvariable=self.options_req, justify=LEFT, wraplength=240).grid(row=1, column=1, sticky=W)
 		ttk.Label(self.edit_window, textvariable=self.options_opt).grid(row=1, column=2)
 		self.var.trace("w", self.get_options)
-		ttk.Button(self.edit_window, text="Apply", command=self.set_objective_type).grid(row=3, column=2, sticky=E, pady=(20,0))
-		ttk.Button(self.edit_window, text="Cancel", command=self.edit_window.destroy).grid(row=3, column=3, sticky=W, pady=(20,0))
+		ttk.Button(self.edit_window, text="Apply", command=self.set_objective_type).grid(row=3, column=2, sticky=E+S, pady=(0,4))
+		ttk.Button(self.edit_window, text="Cancel", command=self.edit_window.destroy).grid(row=3, column=3, sticky=W+S, pady=(0,4), padx=4)
 		
 	def rm(self):
 		if len(stages) != 1:
@@ -184,7 +268,6 @@ class Stage:
 		
 		
 	def edit_objective(self):
-		print(self.__class__.__name__)
 		this_w = 500
 		this_h = 100
 		self.edit_window = Toplevel(self.parent.objectives_box)
@@ -193,20 +276,67 @@ class Stage:
 		ttk.Label(self.edit_window, text=self.__class__.__name__).grid(row=0)
 		ttk.Label(self.edit_window, text="Required Arguments:").grid(row=0, column=1)
 		ttk.Label(self.edit_window, text="Optional Arguments:").grid(row=0, column=2)
+		
+	def uuid_input_validator(self, wholeString, widget, newChars, action):
+		strippedString = wholeString.replace('-','',4)
+		if len(newChars) == 1:
+			first_occ = wholeString.find('-',0,min(9, len(wholeString)))
+			if first_occ != -1:
+				second_occ = wholeString.find('-', first_occ + 1, min(first_occ + 6, len(wholeString)))
+				if second_occ != -1:
+					third_occ = wholeString.find('-', second_occ + 1, min(second_occ + 6, len(wholeString)))
+					if third_occ != -1:
+						fourth_occ = wholeString.find('-', third_occ + 1, min(third_occ + 6, len(wholeString)))
+						if fourth_occ != -1:
+							print("as it should be")
+						elif len(wholeString) >= 24:
+							 root.nametowidget(widget).insert(23, '-')
+					elif len(wholeString) >= 19:
+						 root.nametowidget(widget).insert(18, '-')
+				elif len(wholeString) >= 14:
+					 root.nametowidget(widget).insert(13, '-')
+			elif len(wholeString) >= 9:
+				root.nametowidget(widget).insert(8, '-')
+		elif len(newChars) == 32 and all(c in string.hexdigits for c in newChars) and newChars==wholeString:
+			root.nametowidget(widget).delete(0,END)
+			root.nametowidget(widget).insert(0, newChars[0:8] + "-" + newChars[8:12] + "-" + newChars[12:16] + "-" + newChars[16:20] + "-" + newChars [16:33])
+			return False
+		if all(c in string.hexdigits for c in strippedString) and len(strippedString) <= 32:
+			return True
+		else: 
+			return False
+		
+	
+	def is_valid_uuid(uuid_to_test):
+		try:
+			int(uuid_to_test.replace("-", "", 4), 16)
+		except:
+			return False
+		first_occ = uuid_to_test.find('-',0,min(9, len(uuid_to_test)))
+		if first_occ != -1:
+			second_occ = uuid_to_test.find('-', first_occ + 1, min(first_occ + 6, len(uuid_to_test)))
+			if second_occ != -1:
+				third_occ = uuid_to_test.find('-', second_occ + 1, min(second_occ + 6, len(uuid_to_test)))
+				if third_occ != -1:
+					fourth_occ = uuid_to_test.find('-', third_occ + 1, min(third_occ + 6, len(uuid_to_test)))
+					if fourth_occ != -1:
+						return True
+		return False
+
 
 class Objective(Stage):
 	def __init__(self, parent):
 		self.identifier = int()
-		self.item = ""
+		self.item = StringVar()
 		self.entity = ""
-		self.uuid = ""
+		self.uuid = StringVar()
 		self.inserter = ""
 		self.class_name = ""
 		self.name = ""
 		self.text = ""
 		self.NPC = ""
-		if self.__class__.__name__ == "POKEMON_DEFEAT" or "POKEMON_HAS" or "POKEMON_CAPTURE" or "POKEMON_EVOLVE_POST" or "POKEMON_EVOLVE_PRE" or "POKEMON_HATCH" or "POKEMON_TRADE_GET" or "POKEMON_TRADE_GIVE":
-			print("hi there")
+		if self.__class__.__name__ in ("POKEMON_DEFEAT", "POKEMON_HAS", "POKEMON_CAPTURE", "POKEMON_EVOLVE_POST", "POKEMON_EVOLVE_PRE", "POKEMON_HATCH", "POKEMON_TRADE_GET", "POKEMON_TRADE_GIVE"):
+			print()
 		self.entries = []
 		self.parent = parent
 		self.constructor_box = ttk.Frame(self.parent.objectives_box)
@@ -216,6 +346,7 @@ class Objective(Stage):
 		self.delete_button.grid(row=0, column=1, padx=(2,0), pady=1)
 		self.delete_tooltip = Delete_Tooltip(self.delete_button, text="Delete this objective")
 		self.chance_validation = self.constructor_box.register(self.chance_validation)
+		self.uuid_input_validation = self.constructor_box.register(self.uuid_input_validator)
 		
 		
 	def rm(self):
@@ -229,7 +360,7 @@ class Objective(Stage):
 
 	def edit_objective(self, optcol="none"):
 		this_w = 600
-		this_h = 140
+		this_h = 148
 		self.edit_window = Toplevel(self.parent.objectives_box)
 		self.edit_window.grab_set()
 		self.edit_window.columnconfigure((0,1,2,3,4,5,6), weight=1)
@@ -251,10 +382,8 @@ class Objective(Stage):
 		self.item_frame.grid(row=1, column=column, columnspan=columns, padx=2)
 		if parent == self.edit_window:
 			ttk.Label(self.item_frame, text="Item:", ).grid()
-		self.item_var = ttk.Entry(self.item_frame)
+		ttk.Entry(self.item_frame, textvariable=self.item).grid(row=0,column=1)
 		self.item_tooltip = CreateToolTip(self.item_frame, text="Enter a <namespace>:item")
-		self.item_var.insert(10, self.item)
-		self.item_var.grid(row=0,column=1)
 
 	def name_entry(self, column, parent="", columnspan=1):
 		if parent == "":
@@ -275,10 +404,8 @@ class Objective(Stage):
 		self.uuid_frame.grid(row=1, column=column, columnspan=columns, padx=2)
 		if parent == self.edit_window:
 			ttk.Label(self.uuid_frame, text="UUID:", ).grid()
-		self.uuid_var = ttk.Entry(self.uuid_frame)
+		ttk.Entry(self.uuid_frame, textvariable=self.uuid, validate='key', validatecommand=(self.uuid_input_validation, '%P', '%W', '%S', '%d'), width=40).grid(row=1,column=1)
 		self.uuid_tooltip = CreateToolTip(self.uuid_frame, text="Enter a UUID")
-		self.uuid_var.insert(10, self.uuid)
-		self.uuid_var.grid(row=1,column=1)
 
 	def time_validation(self, newStr):
 		if newStr.isnumeric():
@@ -305,7 +432,6 @@ class Objective(Stage):
 		self.inserter_frame.grid(row=1, column=column, columnspan=columns, padx=2)
 		if parent == self.edit_window:
 			ttk.Label(self.inserter_frame, text="inserter:", ).grid()
-		self.inserter_tooltip = CreateToolTip(self.inserter_frame, text="Enter an inserter\nInserters only require to be defined once and can be reused")
 		ttk.Label(self.inserter_frame, text="Syntax: !#<type>,<mode>,<chance>,[range],[times...]\n").grid(row=2, column=0, columnspan=5)
 		ttk.OptionMenu(self.inserter_frame, self.inserter_type, self.inserter_type.get(), *["NPC","Pixelmon"]).grid(row=1, column=0)
 		ttk.OptionMenu(self.inserter_frame, self.inserter_mode, self.inserter_mode.get(), *["Time","Spawn"]).grid(row=1, column=1)
@@ -316,6 +442,7 @@ class Objective(Stage):
 		self.inserter_range_entry.grid(row=1, column=3)
 		self.inserter_times_entry = ttk.Entry(self.inserter_frame, textvariable=self.inserter_times, validate="key", validatecommand=(self.time_validation, "%P"), width=10)
 		self.inserter_times_entry.grid(row=1, column=4)
+		self.inserter_tooltip = CreateToolTip(self.inserter_frame, text="Enter an inserter\nInserters only require to be defined once and can be reused")
 
 	def inserter_mode_swap(self, *args):
 		if not self.inserter_mode.get() == self.inserter_mode_old:
@@ -329,14 +456,14 @@ class Objective(Stage):
 		
 	def one_out_two_entrys(self, column, entry_one, entry_two):
 		def one_out_two_swap(*args):
-			if switch_var.get() != self.switch_var_old:
-				if switch_var.get() == "first":
+			if self.switch_var.get() != self.switch_var_old:
+				if self.switch_var.get() == "first":
 					getattr(self, entry_two.lower() + "_frame").destroy()
 					method1(0, self.one_out_two_entrys_frame, 2)
 				else:
 					getattr(self, entry_one.lower() + "_frame").destroy()
 					method2(0, self.one_out_two_entrys_frame, 2)
-				self.switch_var_old = switch_var.get()
+				self.switch_var_old = self.switch_var.get()
 		
 		self.one_out_two_entrys_frame = ttk.Frame(self.edit_window)
 		self.one_out_two_entrys_frame.grid(row=1, column=column)
@@ -353,14 +480,16 @@ class Objective(Stage):
 	def makestr(self):
 		string = self.__class__.__name__
 		return string
-		
 
 		
 class BLOCKER(Objective):
 	def __init__(self, parent):
 		super().__init__(parent)
-	
 		
+class FOLLOWTHROUGH(Objective):
+	def __init__(self, parent):
+		super().__init__(parent)
+			
 class DIALOGUE(Objective):
 	def __init__(self, parent):
 		super().__init__(parent)
@@ -379,7 +508,7 @@ class DIALOGUE(Objective):
 		super().save_objective_changes()
 
 	def makestr(self):
-		string = self.__class__.__name__
+		string = self.__class__.__name__ + " "
 		if self.switch_var.get() == "first":
 			inserter = "!#" + self.inserter_type.get() + "," + self.inserter_mode.get() + "," + str(self.inserter_chance.get())
 			if self.inserter_mode.get() == "Time":
@@ -389,11 +518,11 @@ class DIALOGUE(Objective):
 				else:
 					if self.inserter_times.get().endswith(","):
 						self.inserter_times.set(self.inserter_times.get()[0:-1])
-					inserter += str(self.inserter_times.get().split(",")).replace([" ", "'"], "")
+					inserter += str(self.inserter_times.get().split(",")).replace(" ", "").replace("'", "")
 			string += inserter
 			print(string)
 		else:
-			string += self.uuid_var.get()
+			string += self.uuid.get()
 		return string
 		
 	def edit_objective(self):
@@ -416,7 +545,7 @@ def create_json():
 		"weight": weight.get(),
 		"abandonable": abandonable.get(),
 		"repeatable": repeatable.get(),
-		"activeStage": activeStage.get(),
+		"activeStage": int(activeStage.get()),
 		"stages": write_stage_data()
 	}))
 
@@ -441,9 +570,19 @@ def write_stage_data():
 		
 root = Tk()
 root.title("AdvancedQuesting - Pixelmon Quest Creator")
-master = ttk.Frame(root)
-master.pack(padx=4, pady=4, fill=BOTH)
+root.rowconfigure(0, weight=1)
+root.geometry("340x600")
+root.columnconfigure(0, weight=1)
+master = ttk.Frame(fake_canvas, pad=(4,4))
+master.bind('<Configure>', lambda e: fake_canvas.configure(scrollregion=fake_canvas.bbox('all')))
 master.columnconfigure(1,weight=1, minsize=100)
+fake_canvas = Canvas(master)
+fake_canvasgrid(row=6, column=2, columnspan=1, sticky="ewns", padx=(40,0))
+master_scrollbar = Scrollbar(master, command=fake_canvas.yview, width=16)
+master_scrollbar.grid(row=0, column=1, sticky=E+W+N+S)
+fake_canvas.configure(yscrollcommand=master_scrollbar.set)
+fake_canvas.bind('<Configure>', lambda e: fake_canvas.configure(scrollregion=fake_canvas.bbox('all')))
+fake_canvas.create_window((0,0), window=stage_frame, anchor="nw")
 
 int_validation = master.register(only_numbers)
 
@@ -459,7 +598,7 @@ radiant = BooleanVar()
 ttk.Checkbutton(master, variable=radiant, text="radiant").grid(row=0, sticky=W)
 ttk.Label(master, text="weight:").grid(row=1, sticky=W, padx=(20,0))
 weight = ttk.Entry(master, validate="key", validatecommand=(int_validation, '%S'))
-weight.insert(10,"0")
+weight.insert(10,0)
 weight.grid(row=1, column=1, sticky="ew")
 abandonable = BooleanVar()
 ttk.Checkbutton(master, variable=abandonable, text="abandonable").grid(row=2, sticky=W)
@@ -467,6 +606,7 @@ repeatable = BooleanVar()
 ttk.Checkbutton(master, variable=repeatable, text="repeatable").grid(row=3, sticky=W)
 ttk.Label(master, text="activeStage:").grid(row=4, sticky=W, padx=(20,0))
 activeStage = ttk.Entry(master, validate="key", validatecommand=(int_validation, '%S'))
+activeStage.insert(10,0)
 activeStage.grid(row=4, column=1, sticky=E+W)
 ttk.Label(master, text="Stages:").grid(row=5, sticky=W, padx=(20,0))
 stage_frame = ttk.Frame(master)
