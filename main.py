@@ -47,7 +47,7 @@ objective_names = [
 ]
 objective_data_req = [
 	"<x1> <z1> <x2> <z2> <dimension>",
-	"item=[mod:]%s count=int",	
+	"item=[mod:]%s count=int",
 	"soundbase=true|false; count=int; category=physical|special|status;\ntype=<any of the 17 types>;\nmove=<attack name>,<attack name>,<attack name>,<attack name>; result=<proceed|hit|ignore|killed|succeeded|charging|unable|failed|missed|notarget>;\ndamage[=|</>]int; fulldamage[=|</>]int; accuracy[=|</>]int",
 	[],
 	[],
@@ -136,7 +136,7 @@ class Delete_Tooltip(CreateToolTip):
 	def enter(self, event=None):
 		self.widget['image'] = delete_hover
 		super().enter(self)
-		
+
 
 	def close(self, event=None):
 		self.widget['image'] = delete
@@ -167,10 +167,10 @@ class Stage:
 		self.delete_button = ttk.Button(self.container, image=delete, command=self.rm)
 		self.delete_button.grid(row=1, rowspan=3, column=2, sticky=W+E)
 		self.del_tooltip = Delete_Tooltip(self.delete_button, text="Delete this stage")
-		
+
 		style = ttk.Style()
 		style.configure('Red.TEntry', foreground="orange red")
-	
+
 	def chance_validation(self, new_number, widget):
 		if new_number == "":
 			root.nametowidget(widget).set(0.0)
@@ -182,27 +182,27 @@ class Stage:
 		if 0.0 <= float(new_number) <= 1.0:
 			print(new_number)
 			root.nametowidget(widget)['style'] = 'TEntry'
-		else: 
+		else:
 			root.nametowidget(widget)['style'] = 'Red.TEntry'
 		return True
-			
+
 	def move_up(self):
 		index = stages.index(self)
 		stages[index-1], stages[index] = stages[index], stages[index-1]
 		for stage in stages:
 			stage.refresh_id()
-		
-		
+
+
 	def move_down(self):
 		index = stages.index(self)
 		stages[index], stages[index+1] = stages[index+1], stages[index]
 		for stage in stages:
 			stage.refresh_id()
-		
-	
+
+
 	def new_objective(self):
 		self.objectives.append(Objective(self, len(self.objectives)))
-		
+
 	def refresh_id(self):
 		self.stage.set(stages.index(self)*10)
 		self.container.grid(row=self.stage.get())
@@ -210,11 +210,11 @@ class Stage:
 			self.nextStage = -1
 		else:
 			self.nextStage = stages.index(self)*10+10
-			
+
 		if stages.index(self) == len(stages)-1:
 			self.down_button['state'] = 'disabled'
 		else:
-			self.down_button['state'] = 'normal'	
+			self.down_button['state'] = 'normal'
 		if stages.index(self) == 0:
 			self.up_button['state'] = 'disabled'
 		else:
@@ -223,7 +223,7 @@ class Stage:
 			self.delete_button['state'] = 'disabled'
 		else:
 			self.delete_button['state'] = 'normal'
-		
+
 	def new_objective(self):
 		this_w = 650
 		this_h = 200
@@ -248,7 +248,7 @@ class Stage:
 		self.var.trace("w", self.get_options)
 		ttk.Button(self.edit_window, text="Apply", command=self.set_objective_type).grid(row=3, column=2, sticky=E+S, pady=(0,4))
 		ttk.Button(self.edit_window, text="Cancel", command=self.edit_window.destroy).grid(row=3, column=3, sticky=W+S, pady=(0,4), padx=4)
-		
+
 	def rm(self):
 		if len(stages) != 1:
 			self.container.destroy()
@@ -260,13 +260,13 @@ class Stage:
 	def get_options(self, *args):
 		self.options_req.set(objective_data_req[objective_names.index(self.var.get())])
 		self.options_opt.set(objective_data_opt[objective_names.index(self.var.get())])
-	
+
 	def set_objective_type(self):
 		self.objectives.append(eval(self.var.get())(self))
 		self.objectives[-1].identifier = len(self.objectives)-1
 		self.edit_window.destroy()
-		
-		
+
+
 	def edit_objective(self):
 		this_w = 500
 		this_h = 100
@@ -276,7 +276,7 @@ class Stage:
 		ttk.Label(self.edit_window, text=self.__class__.__name__).grid(row=0)
 		ttk.Label(self.edit_window, text="Required Arguments:").grid(row=0, column=1)
 		ttk.Label(self.edit_window, text="Optional Arguments:").grid(row=0, column=2)
-		
+
 	def uuid_input_validator(self, wholeString, widget, newChars, action):
 		strippedString = wholeString.replace('-','',4)
 		if len(newChars) == 1:
@@ -303,10 +303,10 @@ class Stage:
 			return False
 		if all(c in string.hexdigits for c in strippedString) and len(strippedString) <= 32:
 			return True
-		else: 
+		else:
 			return False
-		
-	
+
+
 	def is_valid_uuid(uuid_to_test):
 		try:
 			int(uuid_to_test.replace("-", "", 4), 16)
@@ -347,8 +347,8 @@ class Objective(Stage):
 		self.delete_tooltip = Delete_Tooltip(self.delete_button, text="Delete this objective")
 		self.chance_validation = self.constructor_box.register(self.chance_validation)
 		self.uuid_input_validation = self.constructor_box.register(self.uuid_input_validator)
-		
-		
+
+
 	def rm(self):
 		self.constructor_box.destroy()
 		if len(self.parent.objectives) == 1:
@@ -396,7 +396,7 @@ class Objective(Stage):
 		self.name_tooltip = CreateToolTip(self.name_frame, text="Enter the name that\nshould be displayed")
 		self.name_var.insert(10, self.name)
 		self.name_var.grid(row=1,column=1)
-		
+
 	def uuid_entry(self, column, parent="", columns=1):
 		if parent == "":
 			parent = self.edit_window
@@ -424,7 +424,7 @@ class Objective(Stage):
 				return True
 			except:
 				return False
-		
+
 	def inserter_entry(self, column, parent="", columns=1):
 		if parent == "":
 			parent = self.edit_window
@@ -453,7 +453,7 @@ class Objective(Stage):
 				self.inserter_range_entry.grid_forget()
 				self.inserter_times_entry.grid_forget()
 			self.inserter_mode_old = self.inserter_mode.get()
-		
+
 	def one_out_two_entrys(self, column, entry_one, entry_two):
 		def one_out_two_swap(*args):
 			if self.switch_var.get() != self.switch_var_old:
@@ -464,7 +464,7 @@ class Objective(Stage):
 					getattr(self, entry_one.lower() + "_frame").destroy()
 					method2(0, self.one_out_two_entrys_frame, 2)
 				self.switch_var_old = self.switch_var.get()
-		
+
 		self.one_out_two_entrys_frame = ttk.Frame(self.edit_window)
 		self.one_out_two_entrys_frame.grid(row=1, column=column)
 		self.one_out_two_entrys_frame.columnconfigure((0,1), weight=0, uniform="fred")
@@ -481,15 +481,15 @@ class Objective(Stage):
 		string = self.__class__.__name__
 		return string
 
-		
+
 class BLOCKER(Objective):
 	def __init__(self, parent):
 		super().__init__(parent)
-		
+
 class FOLLOWTHROUGH(Objective):
 	def __init__(self, parent):
 		super().__init__(parent)
-			
+
 class DIALOGUE(Objective):
 	def __init__(self, parent):
 		super().__init__(parent)
@@ -524,20 +524,20 @@ class DIALOGUE(Objective):
 		else:
 			string += self.uuid.get()
 		return string
-		
+
 	def edit_objective(self):
 		super().edit_objective(optcol=1)
 		self.item_entry(1)
 		self.one_out_two_entrys(0, "Inserter", "UUID")
-		
-	
+
+
 	def save_callback(self):
 		self.npc = NPC_var.get()
 		self.name = name_var.get()
 		self.text = text_var.get()
 		super().save_callback(self)
-		
-		
+
+
 
 def create_json():
 	print(json.dumps({
@@ -565,18 +565,18 @@ def write_stage_data():
 			for objective in stage.objectives:
 				stage_list[-1]["objectives"].append(objective.makestr())
 	return stage_list
-	
+
 def _bound_to_mousewheel(event):
-    fake_canvas.bind_all("<MouseWheel>", _on_mousewheel)   
+    fake_canvas.bind_all("<MouseWheel>", _on_mousewheel)
 
 def _unbound_to_mousewheel(event):
-    fake_canvas.unbind_all("<MouseWheel>") 
+    fake_canvas.unbind_all("<MouseWheel>")
 
 def _on_mousewheel(event):
     fake_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
 
 
-		
+
 root = Tk()
 root.title("AdvancedQuesting - Pixelmon Quest Creator")
 root.geometry("340x500")
