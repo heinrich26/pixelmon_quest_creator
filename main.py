@@ -3,7 +3,11 @@ import os
 from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
-from PIL import Image, ImageTk
+try:
+	from PIL import Image, ImageTk
+	PIL = True
+except:
+	PIL = False
 from tooltip_class import CreateToolTip
 import json
 from uuid import UUID
@@ -385,7 +389,7 @@ class Objective(Stage):
 		ttk.Entry(self.item_frame, textvariable=self.item).grid(row=0,column=1)
 		self.item_tooltip = CreateToolTip(self.item_frame, text="Enter a <namespace>:item")
 
-	def name_entry(self, column, parent="", columnspan=1):
+	def name_entry(self, column, parent="", columns=1):
 		if parent == "":
 			parent = self.edit_window
 		self.name_frame = ttk.Frame(parent)
@@ -580,36 +584,62 @@ def _on_mousewheel(event):
 root = Tk()
 root.title("AdvancedQuesting - Pixelmon Quest Creator")
 root.geometry("340x500")
-root.minsize(width=340, height=500)
+root.minsize(width=354, height=500)
+
+# image definition
+if PIL:
+	arrow_img = Image.open("src/icons/16/arrow_up.png")
+	arrow_down = ImageTk.PhotoImage(arrow_img.rotate(180))
+	arrow_up = ImageTk.PhotoImage(arrow_img)
+else:
+	arrow_up = PhotoImage(file="src/icons/16/arrow_up.png")
+	arrow_down = PhotoImage(file="src/icons/16/arrow_down.png")
+	arrow_left = PhotoImage(file="src/icons/16/arrow_left.png")
+	arrow_right = PhotoImage(file="src/icons/16/arrow_right.png")
+	
+# styles
+
+style = ttk.Style()
+style.configure('Scroller.Vertical.TScrollbar', width=16)
+
 master = ttk.Frame(root, pad=(4,4))
 master.columnconfigure(1,weight=1, minsize=100)
+master.columnconfigure(0,weight=1, minsize=40)
 master.rowconfigure(6, weight=1)
 master.pack(fill=BOTH, expand=1)
-stage_box=ttk.Frame(master)
-stage_box.grid(row=6, column=0, columnspan=2, sticky="ewns", padx=(40,0))
-stage_box.rowconfigure(0, weight=1)
+
+stage_box=ttk.Frame(master, width=285)
+stage_box.grid(row=6, column=0, columnspan=2, sticky="wns", padx=(40,0))
 stage_box.bind('<Enter>', _bound_to_mousewheel)
 stage_box.bind('<Leave>', _unbound_to_mousewheel)
-fake_canvas = Canvas(stage_box, highlightthickness=0)
-fake_canvas.grid(row=0, columnspan=2, sticky=N+S+E+W)
+stage_box_sub1=ttk.Frame(stage_box)
+stage_box_sub1.grid(row=0,column=0,sticky=N+S)
+
+
+fake_canvas = Canvas(stage_box_sub1, highlightthickness=0, width=286)
+
+stage_scrollbar = ttk.Scrollbar(stage_box, command=fake_canvas.yview, style="Scroller.Vertical.TScrollbar")
+stage_scrollbar.grid(row=0,column=1,sticky=N+S+W)
+
+fake_canvas.pack(fill=Y, padx=(0,2))
+
 stage_frame = ttk.Frame(fake_canvas)
 stage_frame.rowconfigure(0, weight=1)
-stage_frame.bind('<Configure>', lambda e: fake_canvas.configure(scrollregion=fake_canvas.bbox('all')))
-stage_scrollbar = Scrollbar(stage_box, command=fake_canvas.yview, width=16)
-stage_scrollbar.grid(row=0, column=1, sticky=N+S, padx=0)
+#stage_frame.bind('<Configure>', lambda e: fake_canvas.configure(scrollregion=fake_canvas.bbox('all')))
+
+
 fake_canvas.configure(yscrollcommand=stage_scrollbar.set)
-fake_canvas.bind('<Configure>', lambda e: fake_canvas.configure(scrollregion=fake_canvas.bbox('all')))
+#fake_canvas.bind('<Configure>', lambda e: fake_canvas.configure(scrollregion=fake_canvas.bbox('all')))
 fake_canvas.create_window((0,0), window=stage_frame, anchor="nw")
+# versuchen ob das reicht...
+stage_box.bind('<Configure>', lambda e: fake_canvas.configure(scrollregion=fake_canvas.bbox('all')))
 
 int_validation = master.register(only_numbers)
 
-# image definition
 
-arrow_img = Image.open("src/icons/16/arrow_up.png")
-arrow_down = ImageTk.PhotoImage(arrow_img.rotate(180))
-arrow_up = ImageTk.PhotoImage(arrow_img)
-delete = ImageTk.PhotoImage(Image.open('src/icons/16/delete.png'))
-delete_hover = ImageTk.PhotoImage(Image.open('src/icons/16/delete_hover.png'))
+
+delete = PhotoImage(file='src/icons/16/delete.png')
+delete_hover = PhotoImage(file='src/icons/16/delete_hover.png')
 
 radiant = BooleanVar()
 ttk.Checkbutton(master, variable=radiant, text="radiant").grid(row=0, sticky=W)
@@ -634,5 +664,6 @@ bottom_frame = ttk.Frame(master)
 bottom_frame.grid(row=8, columnspan=2, sticky=S)
 ttk.Button(bottom_frame, text='Quit', command=root.quit).grid(column=0, sticky=S)
 ttk.Button(bottom_frame, text='Show', command=create_json).grid(row=0, column=1, sticky=S)
+Button(bottom_frame, command=lambda: print(fake_canvas.bbox('x'), stage_frame.bbox('all'))).grid(column=2, row=0)
 
 mainloop()
