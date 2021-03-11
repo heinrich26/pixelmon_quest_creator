@@ -51,14 +51,25 @@ objective_names = [
 ]
 objective_data_req = [
 	"<x1> <z1> <x2> <z2> <dimension>",
-	"item=[mod:]%s count=int",
-	"soundbase=true|false; count=int; category=physical|special|status;\ntype=<any of the 17 types>;\nmove=<attack name>,<attack name>,<attack name>,<attack name>; result=<proceed|hit|ignore|killed|succeeded|charging|unable|failed|missed|notarget>;\ndamage[=|</>]int; fulldamage[=|</>]int; accuracy[=|</>]int",
+	"item=[mod:]%s count=int()",
+	"soundbase=true|false; count=int(); category=physical|special|status;\ntype=<any of the 17 types>;\nmove=<attack name>,<attack name>,<attack name>,<attack name>; result=<proceed|hit|ignore|killed|succeeded|charging|unable|failed|missed|notarget>;\ndamage[=|</>]int(); fulldamage[=|</>]int(); accuracy[=|</>]int()",
 	[],
 	[],
 	[],
 	[],
 	[],
 	"<entity> name=%s text=%s",
+	"<dimension_id>",
+	"<UUID or class name> <count>",
+	"<UUID or class name> <count> <distance>",
+	[],
+	[],
+	[],
+	[],
+	[],
+	[],
+	"<UUID> or * for any",
+	"<pokémon specs or inserter> <count>",
 	[],
 	[],
 	[],
@@ -66,31 +77,22 @@ objective_data_req = [
 	[],
 	[],
 	[],
-	[],
-	[],
-	[],
-	[],
-	[],
-	[],
-	[],
-	[],
-	[],
-	[],
-	[],
-	[],
-	[],
-	[],
+	"<Weight>:<ActionA> <Weight>:<ActionB>",
+	"<time>",
+	"<structure name>",
 	[],
 	[]
 ]
 
 objective_data_req[3]=objective_data_req[2]
-objective_data_req[4]=objective_data_req[1]
-
+objective_data_req[4] = objective_data_req[6] = objective_data_req[7] = objective_data_req[13] = objective_data_req[14] = objective_data_req[15] = objective_data_req[16] = objective_data_req[17] = objective_data_req[1]
+objective_data_req[20] = objective_data_req[21] = objective_data_req[22] = objective_data_req[23] = objective_data_req[24] = objective_data_req[25] = objective_data_req[26] = objective_data_req[19]
+objective_data_req[30] = objective_data_req[11]
+objective_data_req[31] = objective_data_req[28]
 
 objective_data_opt = [
 	"<y1> at pos2; <y2> at pos5",
-	"multiple tag=%s, name=%s &/or damage=int",
+	"multiple tag=%s name=%s &/or damage=int()",
 	[],
 	[],
 	[],
@@ -107,6 +109,7 @@ objective_data_opt = [
 	[],
 	[],
 	[],
+	"[index]",
 	[],
 	[],
 	[],
@@ -116,14 +119,18 @@ objective_data_opt = [
 	[],
 	[],
 	[],
-	[],
-	[],
+	"[range]",
 	[],
 	[],
 	[]
 ]
 
+objective_data_opt[4] = objective_data_opt[6] = objective_data_opt[7] = objective_data_opt[13] = objective_data_opt[14] = objective_data_opt[15] = objective_data_opt[16] = objective_data_opt[17] = objective_data_opt[1]
+objective_data_opt[31] = objective_data_opt[28]
 
+#pokemon natures & growths
+natures = ["Hardy","Lonely","Adamant","Naughty","Brave","Bold","Docile","Impish","Lax","Relaxed","Modest","Mild","Bashful","Rash","Quiet","Calm","Gentle","Careful","Quirky","Sassy","Timid","Hasty","Jolly","Naive","Serious"]
+growths = ["Microscopic","Pygmy","Runt","Small","Ordinary","Huge","Giant","Enormous","Ginormous"]
 
 
 def new_stage(stage_id):
@@ -151,9 +158,9 @@ class Stage:
 	def __init__(self, this_stage):
 		self.objectives = []
 		self.stage = IntVar()
-		self.container = ttk.Frame(stage_frame, borderwidth=2, relief="ridge")
-		self.container.grid(row=this_stage, sticky="nesw", column=0, pady=(4,0))
-		self.container.columnconfigure((0,1), weight=1)
+		self.container = ttk.Frame(stage_frame, borderwidth=2, relief="ridge", width=2)
+		self.container.grid(row=this_stage, sticky="nwse", column=0, pady=(4,0), padx=0)
+		self.container.columnconfigure(1, weight=1)
 		self.idbox = ttk.Frame(self.container)
 		self.idbox.grid(sticky=W, column=0)
 		ttk.Label(self.idbox, text="stage").grid(column=0, sticky=W, padx=(1,0))
@@ -235,9 +242,9 @@ class Stage:
 		self.edit_window.grab_set()
 		self.edit_window.title("Choose Objective Type:")
 		self.edit_window.geometry('%dx%d+%d+%d' % (this_w, this_h, int(max(master.winfo_x()+(master.winfo_width()-this_w)/2, 0)), int(max(master.winfo_y()+(master.winfo_height()-this_h)/2, 0))))
-		self.edit_window.columnconfigure(0, minsize=120)
+		self.edit_window.columnconfigure(0, minsize=178)
 		self.edit_window.columnconfigure((1,2), minsize=150, weight=1)
-		self.edit_window.rowconfigure(3, weight=1)
+		self.edit_window.rowconfigure(2, weight=1)
 		ttk.Label(self.edit_window, text="Objective:").grid(row=0)
 		ttk.Label(self.edit_window, text="Required Arguments:").grid(row=0, column=1, sticky=W)
 		ttk.Label(self.edit_window, text="Optional Arguments:").grid(row=0, column=2, sticky=W)
@@ -248,7 +255,7 @@ class Stage:
 		self.options_req = StringVar()
 		self.options_opt = StringVar()
 		ttk.Label(self.edit_window, textvariable=self.options_req, justify=LEFT, wraplength=240).grid(row=1, column=1, sticky=W)
-		ttk.Label(self.edit_window, textvariable=self.options_opt).grid(row=1, column=2)
+		ttk.Label(self.edit_window, textvariable=self.options_opt, justify=LEFT, wraplength=240).grid(row=1, column=2, sticky=W)
 		self.var.trace("w", self.get_options)
 		ttk.Button(self.edit_window, text="Apply", command=self.set_objective_type).grid(row=3, column=2, sticky=E+S, pady=(0,4))
 		ttk.Button(self.edit_window, text="Cancel", command=self.edit_window.destroy).grid(row=3, column=3, sticky=W+S, pady=(0,4), padx=4)
@@ -362,18 +369,20 @@ class Objective(Stage):
 		self.parent.objectives.remove(self)
 		del self
 
-	def edit_objective(self, optcol="none"):
+	def edit_objective(self, optcol="none", requirements=True):
 		this_w = 600
 		this_h = 148
 		self.edit_window = Toplevel(self.parent.objectives_box)
 		self.edit_window.grab_set()
-		self.edit_window.columnconfigure((0,1,2,3,4,5,6), weight=1)
+		self.edit_window.columnconfigure((0,1,2,3), weight=1)
+		self.edit_window.rowconfigure(1, weight=1)
 		self.edit_window.title("Edit Objective: " + self.__class__.__name__)
 		self.edit_window.geometry('%dx%d+%d+%d' % (this_w, this_h, int(max(master.winfo_x()+(master.winfo_width()-this_w)/2, 0)), int(max(master.winfo_y()+(master.winfo_height()-this_h)/2, 0))))
-		ttk.Label(self.edit_window, text="Required Arguments:").grid(row=0, column=0, sticky=W)
+		if requirements:
+			ttk.Label(self.edit_window, text="Required Arguments:").grid(row=0, column=0, sticky=W)
 		if optcol != "none":
 			ttk.Label(self.edit_window, text="Optional Arguments:").grid(row=0, column=optcol, sticky=W)
-		ttk.Button(self.edit_window, command=self.save_objective_changes, text="Save Changes").grid(row=4, column=2, pady=(10,4), padx=4, sticky=E)
+		ttk.Button(self.edit_window, command=self.save_objective_changes, text="Save Changes").grid(row=4, column=3, pady=(10,4), padx=4, sticky=E+S)
 
 	def save_objective_changes(self):
 		self.edit_window.destroy()
@@ -448,6 +457,26 @@ class Objective(Stage):
 		self.inserter_times_entry.grid(row=1, column=4)
 		self.inserter_tooltip = CreateToolTip(self.inserter_frame, text="Enter an inserter\nInserters only require to be defined once and can be reused")
 
+	def pokemon_inserter_entry(self, column, parent="", columns=1):
+		if parent == "":
+			parent = self.edit_window
+		self.pokemon_inserter_frame = ttk.Frame(parent)
+		self.pokemon_inserter_frame.grid(row=1, column=column, columnspan=columns, padx=2)
+		if parent == self.edit_window:
+			ttk.Label(self.pokemon_inserter_frame, text="inserter:", ).grid()
+		ttk.Label(self.inserter_frame, text="Syntax: !#<type>,<mode>,<chance>,[range],[times...]\n").grid(row=2, column=0, columnspan=5)
+		ttk.OptionMenu(self.pokemon_inserter_frame, self.pokemon_inserter_type, self.pokemon_inserter_type.get(), *["Dex","DexRange","Types"]).grid(row=1, column=0)
+		ttk.OptionMenu(self.pokemon_inserter_frame, self.pokemon_inserter_nature, self.pokemon_inserter_nature.get(), *["Time","Spawn"]).grid(row=1, column=2)
+		ttk.OptionMenu(self.pokemon_inserter_frame, self.pokemon_inserter_growths, self.pokemon_inserter_growths.get(), *["Time","Spawn"]).grid(row=1, column=3)
+		self.pokemon_inserter_mode.trace("w", self.pokemon_inserter_mode_swap)
+		self.pokemon_inserter_chance_entry = ttk.Entry(self.pokemon_inserter_frame, textvariable=self.pokemon_inserter_chance, validate='key', validatecommand=(self.chance_validation, "%P", "%W"), width=10)
+		self.pokemon_inserter_chance_entry.grid(row=1, column=2)
+		self.pokemon_inserter_range_entry = ttk.Entry(self.pokemon_inserter_frame, textvariable=self.pokemon_inserter_range, validate="key", validatecommand=(int_validation, "%S"), width=10)
+		self.pokemon_inserter_range_entry.grid(row=1, column=3)
+		self.pokemon_inserter_times_entry = ttk.Entry(self.pokemon_inserter_frame, textvariable=self.pokemon_inserter_times, validate="key", validatecommand=(self.time_validation, "%P"), width=10)
+		self.pokemon_inserter_times_entry.grid(row=1, column=4)
+		self.pokemon_inserter_tooltip = CreateToolTip(self.pokemon_inserter_frame, text="Enter an inserter\nInserters only require to be defined once and can be reused")
+
 	def inserter_mode_swap(self, *args):
 		if not self.inserter_mode.get() == self.inserter_mode_old:
 			if self.inserter_mode.get() == "Time":
@@ -490,9 +519,17 @@ class BLOCKER(Objective):
 	def __init__(self, parent):
 		super().__init__(parent)
 
+	def edit_objective(self):
+		super().edit_objective(requirements=False)
+		ttk.Label(self.edit_window, text="There's nothing to edit here!").grid(row=1, column=0)
+
 class FOLLOWTHROUGH(Objective):
 	def __init__(self, parent):
 		super().__init__(parent)
+
+	def edit_objective(self):
+		super().edit_objective(requirements=False)
+		ttk.Label(self.edit_window, text="There's nothing to edit here!").grid(row=1, column=0)
 
 class DIALOGUE(Objective):
 	def __init__(self, parent):
@@ -541,6 +578,11 @@ class DIALOGUE(Objective):
 		self.text = text_var.get()
 		super().save_callback(self)
 
+class POKEMON_CAPTURE(Objective):
+	def __init__(self, parent):
+		super().__init__(parent)
+
+
 
 
 def create_json():
@@ -583,7 +625,7 @@ def _on_mousewheel(event):
 
 root = Tk()
 root.title("AdvancedQuesting - Pixelmon Quest Creator")
-root.geometry("340x500")
+root.geometry("354x500")
 root.minsize(width=354, height=500)
 
 # image definition
@@ -596,7 +638,10 @@ else:
 	arrow_down = PhotoImage(file="src/icons/16/arrow_down.png")
 	arrow_left = PhotoImage(file="src/icons/16/arrow_left.png")
 	arrow_right = PhotoImage(file="src/icons/16/arrow_right.png")
-	
+
+delete = PhotoImage(file='src/icons/16/delete.png')
+delete_hover = PhotoImage(file='src/icons/16/delete_hover.png')
+
 # styles
 
 style = ttk.Style()
@@ -604,42 +649,37 @@ style.configure('Scroller.Vertical.TScrollbar', width=16)
 
 master = ttk.Frame(root, pad=(4,4))
 master.columnconfigure(1,weight=1, minsize=100)
-master.columnconfigure(0,weight=1, minsize=40)
+master.columnconfigure(0,weight=0, minsize=40)
 master.rowconfigure(6, weight=1)
 master.pack(fill=BOTH, expand=1)
 
-stage_box=ttk.Frame(master, width=285)
-stage_box.grid(row=6, column=0, columnspan=2, sticky="wns", padx=(40,0))
+int_validation = master.register(only_numbers)
+
+#stage_box & scrollbar stuff
+stage_box=ttk.Frame(master, width=302)
+stage_box.grid(row=6, column=0, columnspan=2, sticky="wnse", padx=(40,0))
 stage_box.bind('<Enter>', _bound_to_mousewheel)
 stage_box.bind('<Leave>', _unbound_to_mousewheel)
 stage_box_sub1=ttk.Frame(stage_box)
-stage_box_sub1.grid(row=0,column=0,sticky=N+S)
-
+stage_box_sub1.grid(row=0,column=0,sticky="nesw")
 
 fake_canvas = Canvas(stage_box_sub1, highlightthickness=0, width=286)
 
 stage_scrollbar = ttk.Scrollbar(stage_box, command=fake_canvas.yview, style="Scroller.Vertical.TScrollbar")
-stage_scrollbar.grid(row=0,column=1,sticky=N+S+W)
+stage_scrollbar.grid(row=0,column=1, sticky=N+S)
 
-fake_canvas.pack(fill=Y, padx=(0,2))
+fake_canvas.pack(fill=Y, padx=0)
 
-stage_frame = ttk.Frame(fake_canvas)
-stage_frame.rowconfigure(0, weight=1)
-#stage_frame.bind('<Configure>', lambda e: fake_canvas.configure(scrollregion=fake_canvas.bbox('all')))
-
+stage_frame = ttk.Frame(fake_canvas, pad=0)
+stage_frame.columnconfigure(0, weight=1, minsize=285)
 
 fake_canvas.configure(yscrollcommand=stage_scrollbar.set)
-#fake_canvas.bind('<Configure>', lambda e: fake_canvas.configure(scrollregion=fake_canvas.bbox('all')))
 fake_canvas.create_window((0,0), window=stage_frame, anchor="nw")
-# versuchen ob das reicht...
-stage_box.bind('<Configure>', lambda e: fake_canvas.configure(scrollregion=fake_canvas.bbox('all')))
 
-int_validation = master.register(only_numbers)
+stage_frame.bind('<Configure>', lambda e: fake_canvas.configure(scrollregion=fake_canvas.bbox('all')))
 
 
 
-delete = PhotoImage(file='src/icons/16/delete.png')
-delete_hover = PhotoImage(file='src/icons/16/delete_hover.png')
 
 radiant = BooleanVar()
 ttk.Checkbutton(master, variable=radiant, text="radiant").grid(row=0, sticky=W)
@@ -664,6 +704,5 @@ bottom_frame = ttk.Frame(master)
 bottom_frame.grid(row=8, columnspan=2, sticky=S)
 ttk.Button(bottom_frame, text='Quit', command=root.quit).grid(column=0, sticky=S)
 ttk.Button(bottom_frame, text='Show', command=create_json).grid(row=0, column=1, sticky=S)
-Button(bottom_frame, command=lambda: print(fake_canvas.bbox('x'), stage_frame.bbox('all'))).grid(column=2, row=0)
 
 mainloop()
