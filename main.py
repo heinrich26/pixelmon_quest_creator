@@ -14,6 +14,7 @@ from uuid import UUID
 import string
 stages = []
 final = {}
+minimized = False
 
 objective_names = [
 	"ABSOLUTE_POSITION",
@@ -146,8 +147,10 @@ def new_stage(stage_id):
 
 class Arrowed_Tooltip(object):
 	def __init__(self, widget, text='widget info', bg_color="orange red"):
-		widget.update()
-		self.widget = widget
+		self.minimized = False
+		self.widget = root.nametowidget(widget)
+		self.widget.update()
+		self.parent = self.widget.winfo_toplevel()
 		self.text = text
 		self.bg_color = bg_color
 		x = self.widget.winfo_rootx() + int(round(0.5 * self.widget.winfo_width(),0))
@@ -157,6 +160,7 @@ class Arrowed_Tooltip(object):
 		self.tw.wm_attributes("-transparentcolor", "yellow","-alpha",0.7)
 		# Leaves only the label and removes the app window
 		self.tw.wm_overrideredirect(True)
+		self.tw.transient()
 		self.label = Label(self.tw, text=self.text, justify='center', borderwidth=0, bg=self.bg_color, font=("TkTextFont", "8", "normal"))
 		self.label.pack(ipadx=1, side=TOP)
 		self.arrow_canv = Canvas(self.tw, width=12, height=6, background="yellow", highlightthickness=0)
@@ -164,13 +168,20 @@ class Arrowed_Tooltip(object):
 		self.arrow_canv.pack(side=BOTTOM)
 		self.tw.update()
 		self.tw.wm_geometry("+%d+%d" % (x-int(round(0.5*self.tw.winfo_width())), y-self.tw.winfo_height()-2))
-		self.widget.winfo_toplevel().bind("<Configure>", self.repos)
-		print(self.widget)
+		self.parent.bind("<<Minimize_Configure>>", self.repos)
+		self.parentx, self.parenty, self.parentwidth, self.parentheight = self.parent.winfo_rootx(), self.parent.winfo_rooty(), self.parent.winfo_width(), self.parent.winfo_height()
+		self.expect_event = False
 
-	def repos(self, e):
-		self.tw.update()
-		self.tw.wm_geometry("+%d+%d" % (self.widget.winfo_rootx() + int(round(0.5 * self.widget.winfo_width(),0))-int(round(0.5*self.tw.winfo_width())), self.widget.winfo_rooty()-self.tw.winfo_height()-2))
-		self.tw.lift(aboveThis=self.widget.winfo_toplevel())
+	def repos(self, event):
+		if not self.expect_event:
+			self.tw.update()
+			self.tw.wm_geometry("+%d+%d" % (self.widget.winfo_rootx() + int(round(0.5 * self.widget.winfo_width(),0))-int(round(0.5*self.tw.winfo_width())), self.widget.winfo_rooty()-self.tw.winfo_height()-2))
+			self.tw.lift(aboveThis=self.parent)
+			self.expect_event = True
+		else:
+			self.expect_event = False
+			self.tw.update()
+			self.tw.wm_geometry("+%d+%d" % (self.widget.winfo_rootx() + int(round(0.5 * self.widget.winfo_width(),0))-int(round(0.5*self.tw.winfo_width())), self.widget.winfo_rooty()-self.tw.winfo_height()-2))
 
 	def hide(self):
 		lambda: self.tw.withdraw()
@@ -760,6 +771,7 @@ def _on_mousewheel(event):
 
 
 root = Tk()
+root.event_add("<<Minimize_Configure>>", "<Configure>")
 root.title("AdvancedQuesting - Pixelmon Quest Creator")
 root.geometry("354x500")
 root.minsize(width=354, height=500)
