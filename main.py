@@ -1,5 +1,6 @@
-#!/usr/bin/env python3
+set#!/usr/bin/env python3
 import os
+import platform
 from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
@@ -15,6 +16,8 @@ import string
 stages = []
 final = {}
 minimized = False
+
+current_os = platform.system()
 
 objective_names = [
 	"ABSOLUTE_POSITION",
@@ -135,6 +138,9 @@ growths = ["Microscopic","Pygmy","Runt","Small","Ordinary","Huge","Giant","Enorm
 types = ["Normal","Fire","Fighting","Water","Flying","Grass","Poison","Electric","Ground","Psychic","Rock","Ice","Bug","Dragon","Ghost","Dark","Steel","Fairy"]
 
 
+
+
+
 def new_stage(stage_id):
 	if len(stages) == stage_id:
 		if len(stages) != 0:
@@ -157,13 +163,17 @@ class Arrowed_Tooltip(object):
 		y = self.widget.winfo_rooty()
 		# creates a toplevel window
 		self.tw = Toplevel(self.widget)
-		self.tw.wm_attributes("-transparentcolor", "yellow","-alpha",0.7)
+		self.tw.attributes("-alpha", 0.7)
+		if current_os == "Windows":
+			self.tw.wm_attributes("-transparentcolor", self.tw["bg"])
+		if current_os == "Darwin":
+			self.tw.config(bg="systemTransparent")
 		# Leaves only the label and removes the app window
 		self.tw.wm_overrideredirect(True)
 		self.tw.transient()
 		self.label = Label(self.tw, text=self.text, justify='center', borderwidth=0, bg=self.bg_color, font=("TkTextFont", "8", "normal"))
 		self.label.pack(ipadx=1, side=TOP)
-		self.arrow_canv = Canvas(self.tw, width=12, height=6, background="yellow", highlightthickness=0)
+		self.arrow_canv = Canvas(self.tw, width=12, height=6, highlightthickness=0)
 		self.arrow_canv.create_polygon([0,0,6,6,12,0], fill=self.bg_color)
 		self.arrow_canv.pack(side=BOTTOM)
 		self.tw.update()
@@ -184,11 +194,10 @@ class Arrowed_Tooltip(object):
 			self.tw.wm_geometry("+%d+%d" % (self.widget.winfo_rootx() + int(round(0.5 * self.widget.winfo_width(),0))-int(round(0.5*self.tw.winfo_width())), self.widget.winfo_rooty()-self.tw.winfo_height()-2))
 
 	def hide(self):
-		lambda: self.tw.withdraw()
+		self.tw.withdraw()
 
 	def show(self, text="hi"):
-		lambda: self.tw.deiconify()
-		print("shown")
+		self.tw.deiconify()
 
 	def __del__(self):
 		self.tw.destroy()
@@ -229,8 +238,7 @@ class Stage:
 		self.delete_button.grid(row=1, rowspan=3, column=2, sticky=W+E)
 		self.del_tooltip = Delete_Tooltip(self.delete_button, text="Delete this stage")
 
-		style = ttk.Style()
-		style.configure('Red.TEntry', foreground="orange red")
+
 
 	def chance_validation(self, new_number, widget):
 		if new_number == "":
@@ -396,14 +404,27 @@ class Objective(Stage):
 		self.name = ""
 		self.text = ""
 		self.NPC = ""
+		self.count = StringVar(value=1)
 		if self.__class__.__name__ in ("POKEMON_DEFEAT", "POKEMON_HAS", "POKEMON_CAPTURE", "POKEMON_EVOLVE_POST", "POKEMON_EVOLVE_PRE", "POKEMON_HATCH", "POKEMON_TRADE_GET", "POKEMON_TRADE_GIVE"):
 			print()
 		self.entries = []
 		self.parent = parent
+
+		# var assignment
 		global types
+		global growths
+		global natures
 		selectable_types = types.copy()
 		selectable_types.insert(0, "any")
+		selectable_growths = growths.copy()
+		selectable_growths.insert(0, "any")
+		selectable_natures = natures.copy()
+		selectable_natures.insert(0, "any")
 		self.selectable_types = StringVar(value=selectable_types)
+		self.selectable_growths = StringVar(value=selectable_growths)
+		self.selectable_natures = StringVar(value=selectable_natures)
+
+		# building the edit button
 		self.constructor_box = ttk.Frame(self.parent.objectives_box)
 		self.constructor_box.pack(fill=BOTH)
 		ttk.Button(self.constructor_box, text=self.__class__.__name__, command=self.edit_objective, width=20).grid(sticky=N+S, pady=1)
@@ -413,6 +434,7 @@ class Objective(Stage):
 		self.chance_validation = self.constructor_box.register(self.chance_validation)
 		self.uuid_input_validation = self.constructor_box.register(self.uuid_input_validator)
 		self.dex_range_validation = self.constructor_box.register(self.dex_range_validator)
+		self.dex_number_validation = self.constructor_box.register(self.dex_number_validator)
 
 
 	def rm(self):
@@ -426,22 +448,27 @@ class Objective(Stage):
 
 	def edit_objective(self, optcol="none", requirements=True):
 		this_w = 600
-		this_h = 148
+		this_h = 160
 		self.edit_window = Toplevel(self.parent.objectives_box)
 		self.edit_window.grab_set()
-		self.edit_window.columnconfigure((0,1,2,3), weight=1)
 		self.edit_window.rowconfigure(1, weight=1)
 		self.edit_window.title("Edit Objective: " + self.__class__.__name__)
-		self.edit_window.geometry('%dx%d+%d+%d' % (this_w, this_h, int(max(master.winfo_x()+(master.winfo_width()-this_w)/2, 0)), int(max(master.winfo_y()+(master.winfo_height()-this_h)/2, 0))))
+		self.edit_window.geometry("+%d+%d" % (int(max(root.winfo_x()+(root.winfo_width()-this_w)/2, 0)), int(max(root.winfo_y()+(root.winfo_height()-this_h)/2, 0))))
+		self.edit_window.minsize(this_w, this_h)
 		if requirements:
 			ttk.Label(self.edit_window, text="Required Arguments:").grid(row=0, column=0, sticky=W)
 		if optcol != "none":
 			ttk.Label(self.edit_window, text="Optional Arguments:").grid(row=0, column=optcol, sticky=W)
 		ttk.Button(self.edit_window, command=self.save_objective_changes, text="Save Changes").grid(row=4, column=3, pady=(10,4), padx=4, sticky=E+S)
+		self.edit_window.focus_set()
+		self.edit_window.resizable(False, False)
 
 	def save_objective_changes(self):
 		self.edit_window.destroy()
-
+		try:
+			root.deiconify()
+		except:
+			pass
 
 	def item_entry(self, column, parent="", columns=1):
 		if parent == "":
@@ -496,49 +523,115 @@ class Objective(Stage):
 	def dex_range_validator(self, newStr, widget):
 		if len(newStr) >= 8:
 			return False
+		if newStr == "any":
+			try:
+				self.dex_range_error.hide()
+			except:
+				pass
+			root.nametowidget(widget)['style'] = 'TEntry'
+			return True
 		if newStr == "" or newStr in ("an", "y", "n", "a", "ny", "ay"):
 			root.nametowidget(widget)['style'] = 'Red.TEntry'
-			return True
-			del self.dex_error
-		if newStr == "any":
+			try:
+				self.dex_range_error.hide()
+			except:
+				pass
 			return True
 		dex_range = newStr.split("-")
 		if newStr.replace("-", "",1).isnumeric():
 			if len(newStr) >= 4 and newStr.count("-") != 1:
 				return False
+			if len(dex_range[0]) >= 4 :
+				return False
 			if len(dex_range) == 2 and dex_range[1] != "" and dex_range[0] != "":
+				if len(dex_range[1]) >= 4:
+					return False
 				if 0 <= int(dex_range[0]) < int(dex_range[1]) <= 898:
 					root.nametowidget(widget)['style'] = 'TEntry'
 					try:
-						del self.dex_error
+						self.dex_range_error.hide()
 					except:
 						pass
-					print("hidden")
 					return True
 				else:
 					root.nametowidget(widget)['style'] = 'Red.TEntry'
-					self.dex_error=Arrowed_Tooltip(widget, text="Dex entries out of range!")
-					print("shown")
+					try:
+						self.dex_range_error
+					except:
+						self.dex_range_error=Arrowed_Tooltip(widget, text="Dex entries out of range!")
+					self.dex_range_error.show(text="Dex entries out of range!")
 					return True
 			else:
 				root.nametowidget(widget)['style'] = 'TEntry'
 				try:
-					del self.dex_error
+					self.dex_range_error.hide()
 				except:
 					pass
-				print("hidden")
 				return True
 		return False
 
-	def dex_number_validation(self, newStr, widget):
-		print("hi")
-		return True
+	def dex_number_validator(self, newStr, widget):
+		if newStr == "" or newStr in ("an", "y", "n", "a", "ny", "ay"):
+			root.nametowidget(widget)['style'] = 'Red.TEntry'
+			try:
+				self.dex_range_error.hide()
+			except:
+				pass
+			return True
+		if newStr == "any":
+			root.nametowidget(widget)['style'] = 'TEntry'
+			try:
+				self.dex_range_error.hide()
+			except:
+				pass
+			return True
+		if newStr.isnumeric():
+			if 0 <= int(newStr) <= 898:
+				root.nametowidget(widget)['style'] = 'TEntry'
+				try:
+					self.dex_range_error.hide()
+				except:
+					pass
+				return True
+			else:
+				return False
+		else:
+			try:
+				if newStr.endswith(";"):
+					newStr = newStr[0:-1]
+				dex_number_list = newStr.split(";")
+				for x in dex_number_list:
+					if not 0 <= int(x) <= 898:
+						root.nametowidget(widget)['style'] = 'Red.TEntry'
+						try:
+							self.dex_range_error
+						except:
+							self.dex_range_error=Arrowed_Tooltip(widget, text="Dex entries out of range!")
+						self.dex_range_error.show(text="Dex entries out of range!")
+						return True
+					if dex_number_list.count(x) != 1:
+						root.nametowidget(widget)['style'] = 'Red.TEntry'
+						try:
+							self.dex_range_error
+						except:
+							self.dex_range_error=Arrowed_Tooltip(widget, text="Dex entries should not repeat!")
+						self.dex_range_error.show(text="Dex entries should not repeat!")
+						return True
+
+				root.nametowidget(widget)['style'] = 'TEntry'
+				try:
+					self.dex_range_error.hide()
+				except:
+					pass
+				return True
+			except:
+				return False
 
 	def inserter_entry(self, column, parent="", columns=1):
 		if parent == "":
 			parent = self.edit_window
 		self.inserter_frame = ttk.Frame(parent)
-		self.inserter_frame.grid(row=1, column=column, columnspan=columns, padx=2)
+		self.inserter_frame.grid(row=1, column=column, columnspan=columns, padx=2, sticky=N+W)
 		if parent == self.edit_window:
 			ttk.Label(self.inserter_frame, text="inserter:", ).grid()
 		ttk.Label(self.inserter_frame, text="Syntax: !#<type>,<mode>,<chance>,[range],[times...]\n").grid(row=2, column=0, columnspan=5)
@@ -559,25 +652,78 @@ class Objective(Stage):
 		if parent == "":
 			parent = self.edit_window
 		self.pokemon_inserter_frame = ttk.Frame(parent)
-		self.pokemon_inserter_frame.grid(row=1, column=column, columnspan=columns, padx=2)
+		self.pokemon_inserter_frame.grid(row=1, column=column, columnspan=columns, pady=4, padx=(4,0), sticky=N+W)
+		self.pokemon_inserter_frame.columnconfigure(1, minsize=141)
+		self.pokemon_inserter_frame.columnconfigure(0, minsize=88)
 		if parent == self.edit_window:
-			ttk.Label(self.pokemon_inserter_frame, text="inserter:", ).grid()
-		ttk.Label(self.pokemon_inserter_frame, text="Syntax: !#<type>,<type args>,<natures>,<growths>\n").grid(row=2, column=0, columnspan=5)
-		ttk.OptionMenu(self.pokemon_inserter_frame, self.pokemon_inserter_mode, self.pokemon_inserter_mode.get(), *["Dex","DexRange","Types"]).grid(row=1, column=0)
-		ttk.OptionMenu(self.pokemon_inserter_frame, self.pokemon_inserter_natures, self.pokemon_inserter_natures.get(), *natures,"any").grid(row=1, column=2)
-		ttk.OptionMenu(self.pokemon_inserter_frame, self.pokemon_inserter_growths, self.pokemon_inserter_growths.get(), *growths,"any").grid(row=1, column=3)
-		self.pokemon_inserter_dex_numbers_entry = ttk.Entry(self.pokemon_inserter_frame, textvariable=self.pokemon_inserter_dex_numbers, validate="key", validatecommand=(self.dex_number_validation, "%S", "%W"), width=10)
-		self.pokemon_inserter_dex_range_entry = ttk.Entry(self.pokemon_inserter_frame, textvariable=self.pokemon_inserter_dex_range, validate="key", validatecommand=(self.dex_range_validation, "%P", "%W"), width=10)
-		self.pokemon_inserter_type_selector = Listbox(self.pokemon_inserter_frame, listvariable=self.selectable_types, height=4, selectmode=MULTIPLE)
+			ttk.Label(self.pokemon_inserter_frame, text="Inserter:", justify=LEFT).grid(row=0, column=0, sticky=W)
+			self.pokemon_inserter_mode_desc = StringVar(value="Dex IDs split by \';\'")
+			ttk.Label(self.pokemon_inserter_frame, textvariable=self.pokemon_inserter_mode_desc, justify=LEFT).grid(row=0, column=1, sticky=W)
+			ttk.Label(self.pokemon_inserter_frame, text="Select Nature(s):").grid(row=0, column=2, sticky=W)
+			ttk.Label(self.pokemon_inserter_frame, text="Select Growth(s):").grid(row=0, column=3, sticky=W)
+		ttk.OptionMenu(self.pokemon_inserter_frame, self.pokemon_inserter_mode, self.pokemon_inserter_mode.get(), *["Dex","DexRange","Types"]).grid(row=1, column=0, sticky=N+W+E, padx=(0,2))
+
+		# natures selection
+		self.pokemon_inserter_natures_frame = ttk.Frame(self.pokemon_inserter_frame)
+		self.pokemon_inserter_natures_frame.grid(row=1, column=2)
+		self.pokemon_inserter_natures_scrollbar = ttk.Scrollbar(self.pokemon_inserter_natures_frame, orient=VERTICAL)
+		self.pokemon_inserter_natures_selector = Listbox(self.pokemon_inserter_natures_frame, yscrollcommand=self.pokemon_inserter_natures_scrollbar.set, listvariable=self.selectable_natures, height=5, selectmode=MULTIPLE, exportselection=0)
+		self.pokemon_inserter_natures_selector.grid(row=0, column=0, sticky=N+E+S+W)
+		self.pokemon_inserter_natures_scrollbar.config(command=self.pokemon_inserter_natures_selector.yview)
+		self.pokemon_inserter_natures_scrollbar.grid(row=0, column=1, sticky=N+S)
+		self.pokemon_inserter_natures_old = list(self.pokemon_inserter_natures)
+		for item in self.pokemon_inserter_natures:
+			self.pokemon_inserter_natures_selector.selection_set(item)
+
+		# growths selection
+		self.pokemon_inserter_growths_frame = ttk.Frame(self.pokemon_inserter_frame)
+		self.pokemon_inserter_growths_frame.grid(row=1, column=3)
+		self.pokemon_inserter_growths_scrollbar = ttk.Scrollbar(self.pokemon_inserter_growths_frame, orient=VERTICAL)
+		self.pokemon_inserter_growths_selector = Listbox(self.pokemon_inserter_growths_frame, yscrollcommand=self.pokemon_inserter_growths_scrollbar.set, listvariable=self.selectable_growths, height=5, selectmode=MULTIPLE, exportselection=0)
+		self.pokemon_inserter_growths_selector.grid(row=0, column=0, sticky=N+E+S+W)
+		self.pokemon_inserter_growths_scrollbar.config(command=self.pokemon_inserter_growths_selector.yview)
+		self.pokemon_inserter_growths_scrollbar.grid(row=0, column=1, sticky=N+S)
+		self.pokemon_inserter_growths_old = list(self.pokemon_inserter_growths)
+		for item in self.pokemon_inserter_growths:
+			self.pokemon_inserter_growths_selector.selection_set(item)
+
+		self.pokemon_inserter_dex_numbers_entry = ttk.Entry(self.pokemon_inserter_frame, textvariable=self.pokemon_inserter_dex_numbers, validate="key", validatecommand=(self.dex_number_validation, "%P", "%W"))
+		self.pokemon_inserter_dex_range_entry = ttk.Entry(self.pokemon_inserter_frame, textvariable=self.pokemon_inserter_dex_range, validate="key", validatecommand=(self.dex_range_validation, "%P", "%W"))
+		# type selection
+		self.pokemon_inserter_type_frame = ttk.Frame(self.pokemon_inserter_frame)
+		self.pokemon_inserter_type_scrollbar = ttk.Scrollbar(self.pokemon_inserter_type_frame, orient=VERTICAL)
+		self.pokemon_inserter_type_selector = Listbox(self.pokemon_inserter_type_frame, yscrollcommand=self.pokemon_inserter_type_scrollbar.set, listvariable=self.selectable_types, height=5, selectmode=MULTIPLE, exportselection=0)
+		self.pokemon_inserter_type_selector.grid(row=0, column=0, sticky=N+E+S+W)
+		self.pokemon_inserter_type_scrollbar.config(command=self.pokemon_inserter_type_selector.yview)
+		self.pokemon_inserter_type_scrollbar.grid(row=0, column=1, sticky=N+S)
+		self.pokemon_inserter_type_old = list(self.pokemon_inserter_type)
 		for item in self.pokemon_inserter_type:
-			self.pokemon_inserter_type_selector.selection_set(self.pokemon_inserter_type)
+			self.pokemon_inserter_type_selector.selection_set(item)
+
+		# constructing the mode part
 		if self.pokemon_inserter_mode.get() == "Dex":
-			self.pokemon_inserter_dex_numbers_entry.grid(row=1, column=1)
+			self.pokemon_inserter_dex_numbers_entry.grid(row=1, column=1, sticky=W+E+N)
+			self.pokemon_inserter_mode_desc.set("Dex IDs split by \';\'")
 		elif self.pokemon_inserter_mode.get() == "DexRange":
-			self.pokemon_inserter_dex_range_entry.grid(row=1, column=1)
+			self.pokemon_inserter_dex_range_entry.grid(row=1, column=1, sticky=W+E+N)
+			self.pokemon_inserter_mode_desc.set("A Range of Dex IDs (a-b):")
 		else:
-			self.pokemon_inserter_type_selector.grid(row=1, column=1)
+			self.pokemon_inserter_type_frame.grid(row=1, column=1)
+			self.pokemon_inserter_mode_desc.set("Select Type(s):")
 		self.pokemon_inserter_mode.trace("w", self.pokemon_inserter_mode_swap)
+		self.pokemon_inserter_type_selector.bind("<<ListboxSelect>>", self.set_type_selection)
+		self.pokemon_inserter_growths_selector.bind("<<ListboxSelect>>", self.set_growths_selection)
+		self.pokemon_inserter_natures_selector.bind("<<ListboxSelect>>", self.set_natures_selection)
+
+	def count_entry(self, column, parent="", columns=1):
+		if parent == "":
+			parent = self.edit_window
+		self.count_frame = ttk.Frame(parent)
+		self.count_frame.grid(row=1, column=column, columnspan=columns, pady=4, padx=(4,0), sticky=N+W)
+		self.count_frame.columnconfigure(0, minsize=50)
+		if parent == self.edit_window:
+			ttk.Label(self.count_frame, text="Amount:", justify=LEFT).grid(row=0, column=0, sticky=W)
+		ttk.Entry(self.count_frame, textvariable=self.count, width=4, validate="key", validatecommand=(natural_num_validation, "%P", "%W"), justify=RIGHT).grid(row=1, column=0, sticky=E+W)
 
 	def inserter_mode_swap(self, *args):
 		if not self.inserter_mode.get() == self.inserter_mode_old:
@@ -592,22 +738,65 @@ class Objective(Stage):
 	def pokemon_inserter_mode_swap(self, *args):
 		if not self.pokemon_inserter_mode.get() == self.pokemon_inserter_mode_old:
 			if self.pokemon_inserter_mode.get() == "DexRange":
-				self.pokemon_inserter_dex_range_entry.grid(row=1, column=1)
-				self.pokemon_inserter_type_selector.grid_forget()
+				self.pokemon_inserter_dex_range_entry.grid(row=1, column=1, sticky=W+E+N)
+				self.pokemon_inserter_type_frame.grid_forget()
 				self.pokemon_inserter_dex_numbers_entry.grid_forget()
+				self.pokemon_inserter_mode_desc.set("A Range of Dex IDs (a-b):")
 			elif self.pokemon_inserter_mode.get() == "Dex":
-				self.pokemon_inserter_dex_numbers_entry.grid(row=1, column=1)
-				self.pokemon_inserter_type_selector.grid_forget()
+				self.pokemon_inserter_dex_numbers_entry.grid(row=1, column=1, sticky=W+E+N)
+				self.pokemon_inserter_type_frame.grid_forget()
 				self.pokemon_inserter_dex_range_entry.grid_forget()
+				self.pokemon_inserter_mode_desc.set("Dex IDs split by \';\'")
 			else:
-				self.pokemon_inserter_type_selector.grid(row=1, column=1)
+				self.pokemon_inserter_type_frame.grid(row=1, column=1)
 				self.pokemon_inserter_dex_numbers_entry.grid_forget()
 				self.pokemon_inserter_dex_range_entry.grid_forget()
+				self.pokemon_inserter_mode_desc.set("Select Type(s):")
 			try:
 				del self.dex_error
 			except:
 				pass
 			self.pokemon_inserter_mode_old = self.pokemon_inserter_mode.get()
+
+	def set_type_selection(self, event):
+		selection = self.pokemon_inserter_type_selector.curselection()
+		if len(selection) >= 2 and 0 in selection:
+			if 0 not in self.pokemon_inserter_type_old:
+				self.pokemon_inserter_type_selector.selection_clear(1, END)
+				self.pokemon_inserter_type_old = [0]
+				self.pokemon_inserter_type_selector.selection_set(0)
+			else:
+				self.pokemon_inserter_type_selector.selection_clear(0,0)
+				self.pokemon_inserter_type_old = selection[1:]
+		else:
+			self.pokemon_inserter_type_old = selection
+
+	def set_growths_selection(self, event):
+		selection = self.pokemon_inserter_growths_selector.curselection()
+		if len(selection) >= 2 and 0 in selection:
+			if 0 not in self.pokemon_inserter_growths_old:
+				self.pokemon_inserter_growths_selector.selection_clear(1, END)
+				self.pokemon_inserter_growths_old = [0]
+				self.pokemon_inserter_growths_selector.selection_set(0)
+			else:
+				self.pokemon_inserter_growths_selector.selection_clear(0,0)
+				self.pokemon_inserter_growths_old = selection[1:]
+		else:
+			self.pokemon_inserter_growths_old = selection
+
+	def set_natures_selection(self, event):
+		selection = self.pokemon_inserter_natures_selector.curselection()
+		if len(selection) >= 2 and 0 in selection:
+			if 0 not in self.pokemon_inserter_natures_old:
+				self.pokemon_inserter_natures_selector.selection_clear(1, END)
+				self.pokemon_inserter_natures_old = [0]
+				self.pokemon_inserter_natures_selector.selection_set(0)
+			else:
+				self.pokemon_inserter_natures_selector.selection_clear(0,0)
+				self.pokemon_inserter_natures_old = selection[1:]
+		else:
+			self.pokemon_inserter_natures_old = selection
+
 
 	def one_out_two_entrys(self, column, entry_one, entry_two):
 		def one_out_two_swap(*args):
@@ -700,35 +889,48 @@ class POKEMON_CAPTURE(Objective):
 		self.pokemon_inserter_dex_numbers = StringVar(value="any")
 		self.pokemon_inserter_dex_range = StringVar(value="any")
 		self.pokemon_inserter_type = [0]
-		self.pokemon_inserter_natures = StringVar(value="any")
-		self.pokemon_inserter_growths = StringVar(value="any")
+		self.pokemon_inserter_natures = [0]
+		self.pokemon_inserter_growths = [0]
 		super().__init__(parent)
 
 	def edit_objective(self):
 		super().edit_objective()
 		self.pokemon_inserter_entry(0)
+		self.count_entry(1)
+		self.edit_window.resizable(False, False)
 
 	def makestr(self):
 		global types
+		global natures
+		global growths
 		string = self.__class__.__name__ + " "
 		inserter = "!#" + self.pokemon_inserter_mode.get() + ","
 		if self.pokemon_inserter_mode.get() == "Dex":
 			inserter += str(self.pokemon_inserter_dex_numbers.get()) + ","
 		elif self.pokemon_inserter_mode.get() == "DexRange":
-			inserter += str(self.pokemon_inserter_dex_ranges.get()) + ","
+			inserter += str(self.pokemon_inserter_dex_range.get()) + ","
 		elif 0 in self.pokemon_inserter_type:
 			inserter += "any,"
 		else:
-			inserter += ";".join([types[element] for element in self.pokemon_inserter_type]) + ","
-		inserter += self.pokemon_inserter_natures.get() + ","
-		inserter += self.pokemon_inserter_growths.get()
-		string += inserter
+			inserter += ";".join([types[element-1] for element in self.pokemon_inserter_type]) + ","
+		if 0 in self.pokemon_inserter_natures:
+			inserter += "any,"
+		else:
+			inserter += ";".join([natures[element-1] for element in self.pokemon_inserter_natures]) + ","
+		if 0 in self.pokemon_inserter_growths:
+			inserter += "any"
+		else:
+			inserter += ";".join([growths[element-1] for element in self.pokemon_inserter_growths])
+		string += inserter + " " + self.count.get()
 		print(string)
 		return string
 
 	def save_objective_changes(self):
 		if self.pokemon_inserter_mode.get() == "Types":
+			print(self.pokemon_inserter_type_frame.bbox(), self.pokemon_inserter_type_frame.winfo_width())
 			self.pokemon_inserter_type = self.pokemon_inserter_type_selector.curselection()
+		self.pokemon_inserter_growths = self.pokemon_inserter_growths_selector.curselection()
+		self.pokemon_inserter_natures = self.pokemon_inserter_natures_selector.curselection()
 		super().save_objective_changes()
 
 
@@ -742,8 +944,25 @@ def create_json():
 		"stages": write_stage_data()
 	}))
 
-def only_numbers(char):
-	return char.isnumeric()
+def only_numbers(newStr, widget):
+	if newStr.isnumeric() or newStr == "":
+		if newStr == "":
+			root.nametowidget(widget)['style'] = 'Red.TEntry'
+		else:
+			root.nametowidget(widget)['style'] = 'TEntry'
+		return True
+	else:
+		return False
+
+def only_natural_numbers(newStr, widget):
+	if newStr == "":
+		root.nametowidget(widget)['style'] = 'Red.TEntry'
+		return True
+	elif newStr.isnumeric() and int(newStr) >=1:
+		root.nametowidget(widget)['style'] = 'TEntry'
+		return True
+	else:
+		return False
 
 def write_stage_data():
 	stage_list = []
@@ -795,13 +1014,27 @@ delete_hover = PhotoImage(file='src/icons/16/delete_hover.png')
 style = ttk.Style()
 style.configure('Scroller.Vertical.TScrollbar', width=16)
 
+style.element_create("plain.field", "from", "clam")
+style.layout("Red.TEntry",
+				[('Entry.plain.field', {'children': [(
+					'Entry.background', {'children': [(
+						'Entry.padding', {'children': [(
+							'Entry.textarea', {'sticky': 'nswe'})],
+						'sticky': 'nswe'})], 'sticky': 'nswe'})],
+					'border':'2', 'sticky': 'nswe'})])
+style.configure("Red.TEntry",
+	background="",
+	foreground="white",
+	fieldbackground="orange red")
+
 master = ttk.Frame(root, pad=(4,4))
 master.columnconfigure(1,weight=1, minsize=100)
 master.columnconfigure(0,weight=0, minsize=40)
 master.rowconfigure(6, weight=1)
 master.pack(fill=BOTH, expand=1)
 
-int_validation = master.register(only_numbers)
+int_validation = root.register(only_numbers)
+natural_num_validation = root.register(only_natural_numbers)
 
 #stage_box & scrollbar stuff
 stage_box=ttk.Frame(master, width=302)
@@ -832,7 +1065,7 @@ stage_frame.bind('<Configure>', lambda e: fake_canvas.configure(scrollregion=fak
 radiant = BooleanVar()
 ttk.Checkbutton(master, variable=radiant, text="radiant").grid(row=0, sticky=W)
 ttk.Label(master, text="weight:").grid(row=1, sticky=W, padx=(20,0))
-weight = ttk.Entry(master, validate="key", validatecommand=(int_validation, '%S'))
+weight = ttk.Entry(master, validate="key", validatecommand=(int_validation, '%P', '%W'))
 weight.insert(10,0)
 weight.grid(row=1, column=1, sticky="ew")
 abandonable = BooleanVar()
@@ -840,7 +1073,7 @@ ttk.Checkbutton(master, variable=abandonable, text="abandonable").grid(row=2, st
 repeatable = BooleanVar()
 ttk.Checkbutton(master, variable=repeatable, text="repeatable").grid(row=3, sticky=W)
 ttk.Label(master, text="activeStage:").grid(row=4, sticky=W, padx=(20,0))
-activeStage = ttk.Entry(master, validate="key", validatecommand=(int_validation, '%S'))
+activeStage = ttk.Entry(master, validate="key", validatecommand=(int_validation, '%P', '%W'))
 activeStage.insert(10,0)
 activeStage.grid(row=4, column=1, sticky=E+W)
 ttk.Label(master, text="Stages:").grid(row=5, sticky=W, padx=(20,0))
@@ -859,7 +1092,5 @@ ttk.Button(bottom_frame, text='Quit', command=root.quit).grid(column=0, sticky=S
 ttk.Button(bottom_frame, text='Show', command=create_json).grid(row=0, column=1, sticky=S)
 minimizeButton = ttk.Button(bottom_frame, text='Show', command=lambda: minimize())
 minimizeButton.grid(row=0, column=2, sticky=S)
-button_error = Arrowed_Tooltip(activeStage, text="thats wrong")
-button_error.show()
 
 mainloop()
