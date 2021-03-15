@@ -4,6 +4,7 @@ import platform
 from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
+from tkinter import messagebox
 try:
 	from PIL import Image, ImageTk
 	PIL = True
@@ -14,6 +15,7 @@ import json
 from uuid import UUID
 import string
 stages = []
+strings = []
 final = {}
 minimized = False
 
@@ -150,6 +152,27 @@ def new_stage(stage_id):
 		stages.insert(stage_id, Stage(stage_id))
 	for x in stages:
 		x.refresh_id()
+
+# def select_new_sting_name():
+# 	new_string_name = StringVar(value="")
+# 	string_name_selector_window = Toplevel(root)
+# 	string_name_selector_window.title("Create new String")
+# 	string_name_selector_window.grab_set()
+# 	string_name_selector_window.focus_set()
+# 	ttk.Label(string_name_selector_window, text="Enter unique Identifier for new String:").grid(row=0, column=0, sticky=N+W, padx=4, pady=4)
+# 	ttk.Entry(string_name_selector_window, textvariable=new_string_name).grid(row=1, column=0, sticky=W+E, padx=10)
+# 	ttk.Button(string_name_selector_window, command=lambda: new_string(new_string_name.get()))
+# 	string_name_selector_window
+#
+# def new_string(name):
+# 	if not name in strings:
+# 		stages.append(str(name) = StringObj())
+# 	else:
+# 		messagebox.showmessage(text="Name is already in use!\nTry again!")
+
+class StringObj(object):
+	def __init__(self):
+		self.string_frame = ttk.Frame(string_box)
 
 class Arrowed_Tooltip(object):
 	def __init__(self, widget, text='widget info', bg_color="orange red"):
@@ -689,6 +712,7 @@ class Objective(Stage):
 
 		self.pokemon_inserter_dex_numbers_entry = ttk.Entry(self.pokemon_inserter_frame, textvariable=self.pokemon_inserter_dex_numbers, validate="key", validatecommand=(self.dex_number_validation, "%P", "%W"))
 		self.pokemon_inserter_dex_range_entry = ttk.Entry(self.pokemon_inserter_frame, textvariable=self.pokemon_inserter_dex_range, validate="key", validatecommand=(self.dex_range_validation, "%P", "%W"))
+
 		# type selection
 		self.pokemon_inserter_type_frame = ttk.Frame(self.pokemon_inserter_frame)
 		self.pokemon_inserter_type_scrollbar = ttk.Scrollbar(self.pokemon_inserter_type_frame, orient=VERTICAL)
@@ -742,20 +766,28 @@ class Objective(Stage):
 				self.pokemon_inserter_type_frame.grid_forget()
 				self.pokemon_inserter_dex_numbers_entry.grid_forget()
 				self.pokemon_inserter_mode_desc.set("A Range of Dex IDs (a-b):")
+				try:
+					self.dex_range_error.hide()
+				except:
+					pass
 			elif self.pokemon_inserter_mode.get() == "Dex":
 				self.pokemon_inserter_dex_numbers_entry.grid(row=1, column=1, sticky=W+E+N)
 				self.pokemon_inserter_type_frame.grid_forget()
 				self.pokemon_inserter_dex_range_entry.grid_forget()
 				self.pokemon_inserter_mode_desc.set("Dex IDs split by \';\'")
+				try:
+					self.dex_range_error.hide()
+				except:
+					pass
 			else:
 				self.pokemon_inserter_type_frame.grid(row=1, column=1)
 				self.pokemon_inserter_dex_numbers_entry.grid_forget()
 				self.pokemon_inserter_dex_range_entry.grid_forget()
 				self.pokemon_inserter_mode_desc.set("Select Type(s):")
-			try:
-				del self.dex_error
-			except:
-				pass
+				try:
+					self.dex_range_error.hide()
+				except:
+					pass
 			self.pokemon_inserter_mode_old = self.pokemon_inserter_mode.get()
 
 	def set_type_selection(self, event):
@@ -845,6 +877,7 @@ class FOLLOWTHROUGH(Objective):
 class DIALOGUE(Objective):
 	def __init__(self, parent):
 		super().__init__(parent)
+		self.choices = StringVar()
 		self.inserter_type = StringVar(value="NPC")
 		self.inserter_mode = StringVar(value="Time")
 		self.inserter_mode_old = "Time"
@@ -875,6 +908,8 @@ class DIALOGUE(Objective):
 			print(string)
 		else:
 			string += self.uuid.get()
+		if len(self.choices) != 0:
+			print("hithererere")
 		return string
 
 	def edit_objective(self):
@@ -933,6 +968,26 @@ class POKEMON_CAPTURE(Objective):
 		self.pokemon_inserter_natures = self.pokemon_inserter_natures_selector.curselection()
 		super().save_objective_changes()
 
+class POKEMON_HAS(POKEMON_CAPTURE):
+	pass
+
+class POKEMON_HATCH(POKEMON_CAPTURE):
+	pass
+
+class POKEMON_DEFEAT(POKEMON_CAPTURE):
+	pass
+
+class POKEMON_TRADE_GET(POKEMON_CAPTURE):
+	pass
+
+class POKEMON_TRADE_GIVE(POKEMON_CAPTURE):
+	pass
+
+class POKEMON_EVOLVE_PRE(POKEMON_CAPTURE):
+	pass
+
+class POKEMON_EVOLVE_POST(POKEMON_CAPTURE):
+	pass
 
 def create_json():
 	print(json.dumps({
@@ -1059,7 +1114,27 @@ fake_canvas.create_window((0,0), window=stage_frame, anchor="nw")
 
 stage_frame.bind('<Configure>', lambda e: fake_canvas.configure(scrollregion=fake_canvas.bbox('all')))
 
-
+# string_box=ttk.Frame(master)
+# string_box.grid(row=7, column=0, columnspan=2, sticky="wnse", padx=(20,10), pady=8)
+# string_box.bind('<Enter>', _bound_to_mousewheel)
+# string_box.bind('<Leave>', _unbound_to_mousewheel)
+# string_box_sub1=ttk.Frame(string_box)
+# string_box_sub1.grid(row=0,column=0,sticky="nesw")
+#
+# fake_string_canvas = Canvas(string_box_sub1, highlightthickness=0, width=286)
+#
+# string_scrollbar = ttk.Scrollbar(string_box, command=fake_string_canvas.yview, style="Scroller.Vertical.TScrollbar")
+# string_scrollbar.grid(row=0,column=1, sticky=N+S)
+#
+# fake_string_canvas.pack(fill=Y, padx=0)
+#
+# string_frame = ttk.Frame(fake_string_canvas, pad=0)
+# string_frame.columnconfigure(0, weight=1, minsize=285)
+#
+# fake_string_canvas.configure(yscrollcommand=string_scrollbar.set)
+# fake_string_canvas.create_window((0,0), window=string_frame, anchor="nw")
+#
+# string_frame.bind('<Configure>', lambda e: fake_canvas.configure(scrollregion=fake_canvas.bbox('all')))
 
 
 radiant = BooleanVar()
@@ -1077,9 +1152,10 @@ activeStage = ttk.Entry(master, validate="key", validatecommand=(int_validation,
 activeStage.insert(10,0)
 activeStage.grid(row=4, column=1, sticky=E+W)
 ttk.Label(master, text="Stages:").grid(row=5, sticky=W, padx=(20,0))
-stage_frame.columnconfigure(0,weight=1)
 new_stage(0)
 
+# string definition
+#string_frame =
 
 def minimize():
 	minimizeButton.winfo_toplevel().iconify()
