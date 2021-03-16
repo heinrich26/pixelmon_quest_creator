@@ -91,7 +91,7 @@ class animate_obfuscated_text(object):
         self.text = text
         self.new_text = "".join([self.randchar(char) for char in self.text])
         self.var.set(self.text)
-        self.parent.after(500, self.refresh)
+        self.parent.after(100, self.refresh)
 
 
     def randchar(self, i):
@@ -211,7 +211,7 @@ class JSON_text_Generator(object):
         # formatting_info.tag_configure("underline", font=("Minecraft Regular", 10, "underline"))
         # formatting_info.tag_configure("striketrough", font=("Minecraft Regular", 10, "overstrike"))
         anim_text = animate_obfuscated_text(root, self.obfuscated_text, "Obfuscated")
-        ttk.Button(self.json_frame, text="Save", command=self.save_input).grid(row=4, column=3)
+        ttk.Button(self.json_frame, text="Save", command=self.save_input).grid(row=4, column=3, padx=4, pady=4)
 
     def save_input(self):
         self.user_input=self.text_field.get(1.0,END)[:-1].replace("\n", "\\n").replace("§", """\\u00A7""")
@@ -242,6 +242,7 @@ class JSON_text_Generator(object):
 
         html = """<html><body style="background:#000;word-warp:break-word;font-family:minecraft_font;font-size:26px;color:#fff;width:500px;">""" + str(formatted_string) + "</body></html>"
         self.prev_field.set_content(html)
+        print(html)
 
         #self.prev_field.set_html(html)
         # print(user_input, type(user_input))
@@ -273,7 +274,7 @@ if __name__ == "__main__":
 
     root = Tk()
     root.title("JSON Text Generator")
-    root.maxsize(800, 561)
+    root.maxsize(800, 591)
     mcfont = font.Font(name="mc font", family="mc font", font=("Minecraft Regular", 16))
 
     app = JSON_text_Generator()
