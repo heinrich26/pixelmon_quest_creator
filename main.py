@@ -14,6 +14,7 @@ from tooltip_class import CreateToolTip
 import json
 from uuid import UUID
 import string
+from json_text_generator import JSON_text_Generator
 stages = []
 strings = []
 final = {}
@@ -1047,8 +1048,8 @@ def _on_mousewheel(event):
 root = Tk()
 root.event_add("<<Minimize_Configure>>", "<Configure>")
 root.title("AdvancedQuesting - Pixelmon Quest Creator")
-root.geometry("354x500")
-root.minsize(width=354, height=500)
+# root.geometry("354x500")
+root.minsize(width=354, height=700)
 
 # image definition
 if PIL:
@@ -1085,7 +1086,7 @@ style.configure("Red.TEntry",
 master = ttk.Frame(root, pad=(4,4))
 master.columnconfigure(1,weight=1, minsize=100)
 master.columnconfigure(0,weight=0, minsize=40)
-master.rowconfigure(6, weight=1)
+master.rowconfigure((6,7), weight=1)
 master.pack(fill=BOTH, expand=1)
 
 int_validation = root.register(only_numbers)
@@ -1114,27 +1115,27 @@ fake_canvas.create_window((0,0), window=stage_frame, anchor="nw")
 
 stage_frame.bind('<Configure>', lambda e: fake_canvas.configure(scrollregion=fake_canvas.bbox('all')))
 
-# string_box=ttk.Frame(master)
-# string_box.grid(row=7, column=0, columnspan=2, sticky="wnse", padx=(20,10), pady=8)
-# string_box.bind('<Enter>', _bound_to_mousewheel)
-# string_box.bind('<Leave>', _unbound_to_mousewheel)
-# string_box_sub1=ttk.Frame(string_box)
-# string_box_sub1.grid(row=0,column=0,sticky="nesw")
-#
-# fake_string_canvas = Canvas(string_box_sub1, highlightthickness=0, width=286)
-#
-# string_scrollbar = ttk.Scrollbar(string_box, command=fake_string_canvas.yview, style="Scroller.Vertical.TScrollbar")
-# string_scrollbar.grid(row=0,column=1, sticky=N+S)
-#
-# fake_string_canvas.pack(fill=Y, padx=0)
-#
-# string_frame = ttk.Frame(fake_string_canvas, pad=0)
-# string_frame.columnconfigure(0, weight=1, minsize=285)
-#
-# fake_string_canvas.configure(yscrollcommand=string_scrollbar.set)
-# fake_string_canvas.create_window((0,0), window=string_frame, anchor="nw")
-#
-# string_frame.bind('<Configure>', lambda e: fake_canvas.configure(scrollregion=fake_canvas.bbox('all')))
+string_box=ttk.Frame(master, width=322)
+string_box.grid(row=8, column=0, columnspan=2, sticky="wnse", padx=(20,0), pady=8)
+string_box.bind('<Enter>', _bound_to_mousewheel)
+string_box.bind('<Leave>', _unbound_to_mousewheel)
+string_box_sub1=ttk.Frame(string_box)
+string_box_sub1.grid(row=0,column=0,sticky="nesw")
+
+fake_string_canvas = Canvas(string_box_sub1, highlightthickness=0, width=306)
+
+string_scrollbar = ttk.Scrollbar(string_box, command=fake_string_canvas.yview, style="Scroller.Vertical.TScrollbar")
+string_scrollbar.grid(row=0,column=1, sticky=N+S)
+
+fake_string_canvas.pack(fill=Y, padx=0)
+
+string_frame = ttk.Frame(fake_string_canvas, pad=0)
+string_frame.columnconfigure(0, weight=1, minsize=306)
+
+fake_string_canvas.configure(yscrollcommand=string_scrollbar.set)
+fake_string_canvas.create_window((0,0), window=string_frame, anchor="nw")
+
+string_frame.bind('<Configure>', lambda e: fake_canvas.configure(scrollregion=fake_canvas.bbox('all')))
 
 
 radiant = BooleanVar()
@@ -1161,11 +1162,15 @@ def minimize():
 	minimizeButton.winfo_toplevel().iconify()
 	print(minimizeButton.bbox(), minimizeButton.winfo_rootx())
 
-ttk.Label(master, text="").grid(row=7)
+def sizes():
+	return root.geometry()
+
+ttk.Label(master, text="Strings:").grid(row=7, sticky=W, padx=(20,0))
 bottom_frame = ttk.Frame(master)
-bottom_frame.grid(row=8, columnspan=2, sticky=S)
+bottom_frame.grid(row=9, columnspan=2, sticky=S)
 ttk.Button(bottom_frame, text='Quit', command=root.quit).grid(column=0, sticky=S)
 ttk.Button(bottom_frame, text='Show', command=create_json).grid(row=0, column=1, sticky=S)
+ttk.Button(bottom_frame, text="BBox", command=lambda:print(sizes())).grid(column=3,row=0,sticky=S)
 minimizeButton = ttk.Button(bottom_frame, text='Show', command=lambda: minimize())
 minimizeButton.grid(row=0, column=2, sticky=S)
 

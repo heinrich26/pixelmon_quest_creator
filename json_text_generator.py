@@ -124,32 +124,32 @@ class JSON_text_Generator(object):
     def __init__(self, text=""):
         self.text = text
         if __name__ == "__main__":
-            json_frame = ttk.Frame(root)
-            json_frame.pack(fill=BOTH, expand=1)
+            self.json_frame = ttk.Frame(root)
+            self.json_frame.pack(fill=BOTH, expand=1)
         else:
-            json_frame = Toplevel(root)
-            json_frame.title("Configure JSON Text")
-            json_frame.grab_set()
-            json_frame.maxsize(500, 200)
+            self.json_frame = Toplevel(root)
+            self.json_frame.title("Configure JSON Text")
+            self.json_frame.grab_set()
+            self.json_frame.maxsize(500, 200)
         self.user_input=""
-        json_frame.columnconfigure(0, weight=1, minsize=300)
-        ttk.Label(json_frame, text="Enter formatted Text:").grid(row=0, column=0, sticky=W, pady=4, padx=4)
-        self.text_field = Text(json_frame, font=("Minecraft Regular", 16), height=6, width=30, wrap=WORD)
+        self.json_frame.columnconfigure(0, weight=1, minsize=300)
+        ttk.Label(self.json_frame, text="Enter formatted Text:").grid(row=0, column=0, sticky=W, pady=4, padx=4)
+        self.text_field = Text(self.json_frame, font=("Minecraft Regular", 16), height=6, width=30, wrap=WORD)
         self.text_field.insert(1.0, self.user_input)
         self.text_field.grid(row=1, column=0, padx=(4,0), sticky=W+E)
         self.text_field.bind("<KeyRelease>", self.update_prev_text)
-        self.text_scrollbar = ttk.Scrollbar(json_frame, orient=VERTICAL, command=self.text_field.yview)
+        self.text_scrollbar = ttk.Scrollbar(self.json_frame, orient=VERTICAL, command=self.text_field.yview)
         self.text_scrollbar.grid(row=1,column=1,sticky=N+S+W, padx=(0,4))
         self.text_field["yscrollcommand"] = self.text_scrollbar.set
-        ttk.Label(json_frame, text="Preview Output (obfuscated is not acurate):").grid(row=2, column=0, sticky=W, pady=4, padx=4)
-        #self.prev_field = HTMLScrolledText(json_frame, html="", font=("Minecraft Regular", 16), width=30, takefocus=0, state="disabled", height=6)
-        json_frame.rowconfigure(3, weight=1)
-        limiter  = ttk.Frame(json_frame, width=10, height=4)
+        ttk.Label(self.json_frame, text="Preview Output (obfuscated is not acurate):").grid(row=2, column=0, sticky=W, pady=4, padx=4)
+        #self.prev_field = HTMLScrolledText(self.json_frame, html="", font=("Minecraft Regular", 16), width=30, takefocus=0, state="disabled", height=6)
+        self.json_frame.rowconfigure(3, weight=1)
+        limiter  = ttk.Frame(self.json_frame, width=10, height=4)
         limiter.grid(row=3, column=0, padx=4, pady=(0,4), columnspan=2)
         self.prev_field = HtmlFrame(limiter, takefocus=0, relief="sunken", borderwidth=1)
         self.prev_field.pack(pady=(0,4))
 
-        self.formatting_info = Frame(json_frame, bg="#a2a9b1")
+        self.formatting_info = Frame(self.json_frame, bg="#a2a9b1")
         self.formatting_info.grid(row=0, column=2, padx=4, rowspan=4, sticky=N, pady=(4,0))
         ttk.Label(self.formatting_info, font=("Minecraft Regular", 9), text="Code").grid(row=0, column=0, sticky=W+E, pady=1, padx=1)
         ttk.Label(self.formatting_info, font=("Minecraft Regular", 9), text="Name", anchor="c").grid(row=0, column=1, sticky=W+E, pady=1, padx=(0,1))
@@ -211,12 +211,16 @@ class JSON_text_Generator(object):
         # formatting_info.tag_configure("underline", font=("Minecraft Regular", 10, "underline"))
         # formatting_info.tag_configure("striketrough", font=("Minecraft Regular", 10, "overstrike"))
         anim_text = animate_obfuscated_text(root, self.obfuscated_text, "Obfuscated")
-        ttk.Button(json_frame, text="Save", command=self.save_input).grid(row=4, column=3)
+        ttk.Button(self.json_frame, text="Save", command=self.save_input).grid(row=4, column=3)
 
     def save_input(self):
         self.user_input=self.text_field.get(1.0,END)[:-1].replace("\n", "\\n").replace("§", """\\u00A7""")
         while self.user_input.endswith("\\n"):
             self.user_input = self.user_input[:-2]
+        try:
+            self.json_frame.destroy()
+        except:
+            pass
 
     def encode_string(self):
         self.output_string = "".join(["\\u0000"[0:6-len(str(ord(char)))] + str(ord(char)) if not char in """ABCDEFGHJKLMNOPQRSTUVWXYZabcdeghjmnopqrsuvwxyz1234567890,.!/()[]{}?\+*"'#-_<>|%=""" else char for char in self.user_input.replace('\"', '\\"').replace("\'", "\\'")])
