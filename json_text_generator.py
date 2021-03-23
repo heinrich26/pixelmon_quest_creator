@@ -63,7 +63,7 @@ formatting_codes = {
 #     "§o"
 # ]
 #
-formatting_names = [ "black","dark_blue","dark_green","dark_aqua","dark_red","dark_purple","gold","gray","dark_gray","blue","green","aqua","red","light_purple","yellow","white","obfuscated","bold","striketrough","underline","italic","reset", "New Line" ]
+formatting_names = [ "black","dark_blue","dark_green","dark_aqua","dark_red","dark_purple","gold","gray","dark_gray","blue","green","aqua","red","light_purple","yellow","white","obfuscated","bold","strikethrough","underline","italic","reset", "New Line" ]
 
 def find_all(str, sub):
     start = 0
@@ -230,6 +230,7 @@ class JSON_text_Generator(object):
     def update_prev_text(self, e):
         global color_formatting
         user_input = self.text_field.get(1.0,END).replace("\n", "<br>").replace("\\n", "<br>")
+        
         # replacements = 0
         formatted_string = str(user_input)
         formatted_string = formatted_string.replace("§r", "</span>")
@@ -242,7 +243,7 @@ class JSON_text_Generator(object):
 
         html = """<html><body style="background:#000;word-warp:break-word;font-family:minecraft_font;font-size:26px;color:#fff;width:500px;">""" + str(formatted_string) + "</body></html>"
         self.prev_field.set_content(html)
-        print(html)
+
 
         #self.prev_field.set_html(html)
         # print(user_input, type(user_input))

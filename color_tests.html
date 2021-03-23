@@ -3,10 +3,12 @@
 		<title>ColorTests</title>
 
 		<style type="text/css">
+			p, li { white-space: pre-wrap; }
+			
 			@font-face {
 				font-family: "MinecraftFont";
 				src: url("minecraft_font.ttf") format('truetype');
-				color: "black";
+				color: "white";
 			}
 			body {
 				font-family: "MinecraftFont";
@@ -61,7 +63,7 @@
 			.dark_green {
 				color: #00AA00;
 			}
-			.striketrough {
+			.strikethrough {
 				text-decoration: line-through;
 			}
 			.underline {
@@ -76,6 +78,7 @@
 			.obfuscated {
 				text-shadow: 6px 2px 0px;
 				padding: 0 8px 0 4px;
+				font-family:"Wingdings";
 			}
 		</style>
 		
@@ -84,8 +87,7 @@
 
 	<body>
 
-		<span class="red">hallo<span class="obfuscated">world</span>blbla</span>
-		<span>Foo<span>Bar</span>abc</span>
+		<p>This is a <span class="gold">formatted <span class="bold">Text!</span></span><span style="text-decoration: line-through underline;">hello</span></p>
 
 	</body>
 </html>
