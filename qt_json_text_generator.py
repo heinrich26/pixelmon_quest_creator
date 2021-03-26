@@ -1,4 +1,8 @@
 from PyQt5 import QtCore, QtGui, QtWidgets
+from qt_thread_updater import get_updater
+import random
+import time
+import threading
 
 formatting_codes = {
     "§0": "black",
@@ -71,7 +75,7 @@ formats = {
     "underline": "text-decoration: underline;",
     "bold": "font-weight: 700;",
     "italic": "font-style: italic;",
-    "obfuscated": "font-family:\"Wingdings\";"
+    "obfuscated": ""
 }
 
 def rm_unused(tuple):
@@ -87,12 +91,69 @@ def rm_unused(tuple):
             for format in new_tuple[key]:
                 for i in range(1,new_tuple[key].count(format)):
                     new_tuple[key].remove(format)
-    print(new_tuple)
     return new_tuple
+
+alphabet = [
+"i,;.:!|î", # 1px
+"l'`Ììí·´", # 2px
+"It[]ÍÎÏïªº•°", #3px
+"""kf(){}*¤²”\"""", # 4px
+"""ABCDEFGHJKLMNOPQRSTUVWXYZabcdeghjmnopqrsuvwxyz/?$%&+-#_¯=^¨£ÀÁÂÃÄÅÇÈÉÊËÑÒÓÔÕÖÙÚÛÜÝàáâãäåçèéêëñðòóôõöùúûüýÿ0123456789Ææß×¼½¿¬«»""", # 5px
+"~@®÷±"]
+
+class animate_obfuscated_text(object):
+    def __init__(self, text, starts, ends):
+        self.text = text
+        self.starts = starts
+        self.ends = ends
+
+    def animate_text(self):
+        return self.text[0:self.starts[0]] + "".join([self.randtext(i) + self.text[self.ends[i]:self.starts[i+1]] if len(self.starts)-1 != i else self.randtext(i) + self.text[self.ends[i]:] for i in range(0, len(self.starts))])
+
+    def next(self):
+        return """<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0//EN" "http://www.w3.org/TR/REC-html40/strict.dtd"><html><head><meta name="qrichtext" content="1" /><style type="text/css">p, li { white-space: pre-wrap; }</style></head><body style=" font-family:'minecraft_font'; font-size:15pt; font-weight:400; font-style:normal; color:#fff; background-color:#AEAEAE;"><p style=" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;">""" + self.animate_text() + "</p></body></html>"
+
+    def randtext(self, i):
+        return "".join([self.randchar(char) for char in self.text[self.starts[i]:self.ends[i]]])
+
+    def randchar(self, i):
+        global alphabet
+        if i == " ":
+            return " "
+        elif i in alphabet[0]:
+            return alphabet[0][random.randrange(0,7,1)]
+        elif i in alphabet[1]:
+            return alphabet[1][random.randrange(0,7,1)]
+        elif i in alphabet[2]:
+            return alphabet[2][random.randrange(0,11,1)]
+        elif i in alphabet[3]:
+            return alphabet[3][random.randrange(0,10,1)]
+        elif i in alphabet[4]:
+            return alphabet[4][random.randrange(0, len(alphabet[4])-1,1)]
+        elif i in alphabet[5]:
+            return alphabet[5][random.randrange(0,4,1)]
+        else:
+            return i
+
+
 
 
 class Ui_JSONTextGenerator(object):
+    def obfuscated_thread(self, is_alive):
+        is_alive.set()
+        self.obfuscated = True
+        while is_alive.is_set():
+            time.sleep(0.025)
+            get_updater().call_latest(self.previewOutput.setHtml, self.animated_text.next())
+        time.sleep(0.05)
+        self.inputField.textChanged.emit()
+
+    def obfuscated_finder(self, i, stack, raw_text, html, addition):
+        if "obfuscated" in stack[i]:
+            self.obfuscated_starts.append(html.find(raw_text[int(i):int(i)+2]) + addition)
+
     def setupUi(self, JSONTextGenerator):
+        self.alive = threading.Event()
         JSONTextGenerator.setObjectName("JSONTextGenerator")
         JSONTextGenerator.resize(820, 603)
         QtGui.QFontDatabase.addApplicationFont('src/fonts/minecraft_font.ttf')
@@ -546,7 +607,7 @@ class Ui_JSONTextGenerator(object):
         self.previewOutput.setHtml("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
 "<html><head><meta name=\"qrichtext\" content=\"1\" /><title>Preview Output</title><style type=\"text/css\">\n"
 "p, li { white-space: pre-wrap; }\n"
-"</style></head><body style=\"font-family:\'minecraft_font\'; font-size:15pt; font-weight:400; font-style:normal;\">\n"
+"</style></head><body style=\"font-family:\'minecraft_font\'; font-size:15pt; font-weight:400; font-style:normal;background-image:url(src/background.jpg);color:#fff;\">\n"
 "<p style=\" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'minecraft_font\';\">This is a </span><span style=\"font-family:\'minecraft_font\'; color:#ffaa00;\">formatted</span><span style=\"font-family:\'minecraft_font\';\"> </span><span style=\" font-family:\'minecraft_font\'; font-weight:700;\">string!</span></p></body></html>")
         self.label.setText(_translate("JSONTextGenerator", "Enter formatted Text:"))
         self.tableWidget.setSortingEnabled(False)
@@ -601,7 +662,6 @@ class Ui_JSONTextGenerator(object):
 
     def actionSave(self):
         raw_text = self.inputField.toPlainText().replace("\n", "\\n")
-        print("hit")
 
 
 
@@ -620,17 +680,21 @@ class Ui_JSONTextGenerator(object):
                     stack[str(i)].insert(0,formatting_names[formatting_keys.index(raw_text[i:i+2])])
                     i += 1
                 if raw_text[i:i+2] == "§r":
-                    stack[str(i)] = list(stack[str(max([int(num) for num in stack.keys()]))])[1:]
+                    stack[str(i)] = []
                     i += 1
 
             stack = rm_unused(stack)
+            self.obfuscated_starts = []
+            self.obfuscated_ends = []
             html = str(raw_text)
             no_close = True
             for i in stack.keys():
                 if no_close and stack[i] != []:
+                    self.obfuscated_finder(i, stack, raw_text, html, 0)
                     html = html.replace(raw_text[int(i):int(i)+2], "<span style=\"" + "".join([formats[format] for format in stack[i]]) + "\">",1)
                     no_close = False
                 elif stack[i] != []:
+                    self.obfuscated_finder(i, stack, raw_text, html, 7)
                     if "underline" in stack[i] and "strikethrough" in stack[i]:
                         html = html.replace(raw_text[int(i):int(i)+2], "</span><span style=\"" + "".join([formats[format] for format in stack[i] if format not in ("underline", "strikethrough")]) + "text-decoration:line-through underline;" + "\">",1)
                     else:
@@ -638,18 +702,36 @@ class Ui_JSONTextGenerator(object):
                 elif not no_close and stack[i] == [] and i != "0":
                     html = html.replace("§r", "</span>", 1)
                     no_close = True
-                elif i != "0":
+                elif i != "0" or i == "0" and raw_text[0:2] == "§r":
                     html = html.replace("§r", "", 1)
+            # remove extra §'s
+            html = html.replace("§", "")
 
             html += "".join(["</span>" for i in range(0,max(0, html.count("<span style=") - html[html.find("<span style="):].count("</span>")))])
+
+            if self.obfuscated_starts != []:
+                for i in range(0,len(self.obfuscated_starts)):
+                    self.obfuscated_starts[i] = html.find(">", self.obfuscated_starts[i]) + 1
+                    self.obfuscated_ends.append(html.find("<", self.obfuscated_starts[i]))
+                self.animated_text = animate_obfuscated_text(html, self.obfuscated_starts, self.obfuscated_ends)
+                thread = threading.Thread(target=self.obfuscated_thread, args=(self.alive,))
+                thread.start()
+            elif self.alive.is_set():
+                self.alive.clear()
+                thread = None
         else:
+            if self.alive.is_set():
+                self.alive.clear()
+                thread = None
             html = raw_text
 
-        html = """<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0//EN" "http://www.w3.org/TR/REC-html40/strict.dtd"><html><head><meta name="qrichtext" content="1" /><title>ColorTests</title><style type="text/css">p, li { white-space: pre-wrap; }</style></head><body style=" font-family:'minecraft_font'; font-size:15pt; font-weight:400; font-style:normal; color:#000000"><p style=" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;">""" + html + "</p></body></html>"
 
-        self.previewOutput.setHtml(html)
 
-        print(html, "output:", self.previewOutput.document().toHtml())
+        if not self.alive.is_set():
+            html = """<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0//EN" "http://www.w3.org/TR/REC-html40/strict.dtd"><html><head><meta name="qrichtext" content="1" /><title>ColorTests</title><style type="text/css">p, li { white-space: pre-wrap; }</style></head><body style="font-family:'minecraft_font'; font-size:15pt; font-weight:400; font-style:normal; background-image:url(src/background.jpg); color:#fff;"><p style=" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;">""" + html + "</p></body></html>"
+
+            self.previewOutput.setHtml(html)
+
 
 
 if __name__ == "__main__":
@@ -659,4 +741,6 @@ if __name__ == "__main__":
     ui = Ui_JSONTextGenerator()
     ui.setupUi(JSONTextGenerator)
     JSONTextGenerator.show()
+    JSONTextGenerator.setWindowTitle("Configure String")
     sys.exit(app.exec_())
+    ui.alive.clear()
