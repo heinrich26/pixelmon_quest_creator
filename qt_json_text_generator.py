@@ -3,6 +3,7 @@ from qt_thread_updater import get_updater
 import random
 import time
 import threading
+import sys
 
 formatting_codes = {
     "§0": "black",
@@ -111,7 +112,7 @@ class animate_obfuscated_text(object):
         return self.text[0:self.starts[0]] + "".join([self.randtext(i) + self.text[self.ends[i]:self.starts[i+1]] if len(self.starts)-1 != i else self.randtext(i) + self.text[self.ends[i]:] for i in range(0, len(self.starts))])
 
     def next(self):
-        return """<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0//EN" "http://www.w3.org/TR/REC-html40/strict.dtd"><html><head><meta name="qrichtext" content="1" /><style type="text/css">p, li { white-space: pre-wrap; }</style></head><body style=" font-family:'minecraft_font'; font-size:15pt; font-weight:400; font-style:normal; color:#fff; background-color:#AEAEAE;"><p style=" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;">""" + self.animate_text() + "</p></body></html>"
+        return """<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0//EN" "http://www.w3.org/TR/REC-html40/strict.dtd"><html><head><meta name="qrichtext" content="1" /><style type="text/css">p, li { white-space: pre-wrap; }</style></head><body style=" font-family:'minecraft_font'; font-size:15pt; font-weight:400; font-style:normal; color:#fff; background-image:url(src/background.jpg); background-color:#AEAEAE;"><p style=" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;">""" + self.animate_text() + "</p></body></html>"
 
     def randtext(self, i):
         return "".join([self.randchar(char) for char in self.text[self.starts[i]:self.ends[i]]])
@@ -136,9 +137,23 @@ class animate_obfuscated_text(object):
             return i
 
 
+class Qt_JSONTextGenerator(QtWidgets.QWidget):
+    def __init__(self, string_name):
+        self.string_name = string_name
+        self.string = ""
+        self.app = QtWidgets.QApplication(sys.argv)
+        super().__init__()
+        self.setupUi()
+        self.edit_string()
 
+    def __del__(self):
+        self.alive.clear()
 
-class Ui_JSONTextGenerator(object):
+    def edit_string(self):
+        self.show()
+        self.app.exec_()
+        self.alive.clear()
+
     def obfuscated_thread(self, is_alive):
         is_alive.set()
         self.obfuscated = True
@@ -152,36 +167,43 @@ class Ui_JSONTextGenerator(object):
         if "obfuscated" in stack[i]:
             self.obfuscated_starts.append(html.find(raw_text[int(i):int(i)+2]) + addition)
 
-    def setupUi(self, JSONTextGenerator):
+    def setupUi(self):
         self.alive = threading.Event()
-        JSONTextGenerator.setObjectName("JSONTextGenerator")
-        JSONTextGenerator.resize(820, 603)
+        font = QtGui.QFont()
+        font.setPointSize(10)
+        self.setObjectName("self")
+        self.setWindowTitle("Configure String: " + self.string_name)
+        self.resize(820, 603)
         QtGui.QFontDatabase.addApplicationFont('src/fonts/minecraft_font.ttf')
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Preferred, QtWidgets.QSizePolicy.Preferred)
         sizePolicy.setHorizontalStretch(1)
         sizePolicy.setVerticalStretch(1)
-        sizePolicy.setHeightForWidth(JSONTextGenerator.sizePolicy().hasHeightForWidth())
-        JSONTextGenerator.setSizePolicy(sizePolicy)
-        self.gridLayout = QtWidgets.QGridLayout(JSONTextGenerator)
+        sizePolicy.setHeightForWidth(self.sizePolicy().hasHeightForWidth())
+        self.setSizePolicy(sizePolicy)
+        self.gridLayout = QtWidgets.QGridLayout(self)
         self.gridLayout.setContentsMargins(4, 4, 4, 4)
         self.gridLayout.setObjectName("gridLayout")
-        self.inputField = QtWidgets.QPlainTextEdit(JSONTextGenerator)
+        self.inputField = QtWidgets.QPlainTextEdit(self)
         self.inputField.setObjectName("inputField")
         self.gridLayout.addWidget(self.inputField, 1, 1, 1, 1)
-        self.label_2 = QtWidgets.QLabel(JSONTextGenerator)
+        self.label_2 = QtWidgets.QLabel(self)
         self.label_2.setObjectName("label_2")
+        self.setFont(font)
         self.gridLayout.addWidget(self.label_2, 2, 1, 1, 1)
-        self.saveButton = QtWidgets.QPushButton(JSONTextGenerator)
+        self.saveButton = QtWidgets.QPushButton(self)
         self.saveButton.setObjectName("saveButton")
         self.gridLayout.addWidget(self.saveButton, 4, 3, 1, 1)
-        self.previewOutput = QtWidgets.QTextBrowser(JSONTextGenerator)
+        self.cancelButton = QtWidgets.QPushButton(self)
+        self.cancelButton.setObjectName("cancelButton")
+        self.gridLayout.addWidget(self.cancelButton, 4, 2, 1, 1)
+        self.previewOutput = QtWidgets.QTextBrowser(self)
         self.previewOutput.setOverwriteMode(True)
         self.previewOutput.setObjectName("previewOutput")
         self.gridLayout.addWidget(self.previewOutput, 3, 1, 1, 1)
-        self.label = QtWidgets.QLabel(JSONTextGenerator)
+        self.label = QtWidgets.QLabel(self)
         self.label.setObjectName("label")
         self.gridLayout.addWidget(self.label, 0, 1, 1, 1)
-        self.tableWidget = QtWidgets.QTableWidget(JSONTextGenerator)
+        self.tableWidget = QtWidgets.QTableWidget(self)
         sizePolicy = QtWidgets.QSizePolicy(QtWidgets.QSizePolicy.Maximum, QtWidgets.QSizePolicy.Fixed)
         sizePolicy.setHorizontalStretch(1)
         sizePolicy.setVerticalStretch(0)
@@ -588,82 +610,92 @@ class Ui_JSONTextGenerator(object):
         self.tableWidget.verticalHeader().setVisible(False)
         self.tableWidget.verticalHeader().setDefaultSectionSize(23)
         self.gridLayout.addWidget(self.tableWidget, 0, 2, 4, 1)
-        self.save_shortcut = QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+S"),JSONTextGenerator)
+        self.save_shortcut = QtWidgets.QShortcut(QtGui.QKeySequence("Ctrl+S"),self)
         self.save_shortcut.activated.connect(self.actionSave)
         self.saveButton.clicked.connect(self.actionSave)
+        self.cancelButton.clicked.connect(self.close)
         self.inputField.textChanged.connect(self.UpdateHtml)
         self.inputField.setFont(QtGui.QFont("minecraft_font",15))
+        if self.string == "":
+            self.inputField.setPlainText("This is a §6formatted§r §lstring!")
+        else:
+            self.inputField.setPlainText(self.string)
+        self.UpdateHtml()
 
-        self.retranslateUi(JSONTextGenerator)
-        QtCore.QMetaObject.connectSlotsByName(JSONTextGenerator)
+        self.retranslateUi()
+        QtCore.QMetaObject.connectSlotsByName(self)
 
-    def retranslateUi(self, JSONTextGenerator):
+    def retranslateUi(self):
         _translate = QtCore.QCoreApplication.translate
-        JSONTextGenerator.setWindowTitle(_translate("JSONTextGenerator", "Form"))
-        self.inputField.setPlainText("This is a §6formatted§r §lstring!")
-        self.label_2.setText(_translate("JSONTextGenerator", "Preview Output (obfuscated is not acurate):"))
-        self.saveButton.setText(_translate("JSONTextGenerator", "Save"))
-        self.previewOutput.setDocumentTitle(_translate("JSONTextGenerator", "Preview Output"))
-        self.previewOutput.setHtml("<!DOCTYPE HTML PUBLIC \"-//W3C//DTD HTML 4.0//EN\" \"http://www.w3.org/TR/REC-html40/strict.dtd\">\n"
-"<html><head><meta name=\"qrichtext\" content=\"1\" /><title>Preview Output</title><style type=\"text/css\">\n"
-"p, li { white-space: pre-wrap; }\n"
-"</style></head><body style=\"font-family:\'minecraft_font\'; font-size:15pt; font-weight:400; font-style:normal;background-image:url(src/background.jpg);color:#fff;\">\n"
-"<p style=\" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;\"><span style=\" font-family:\'minecraft_font\';\">This is a </span><span style=\"font-family:\'minecraft_font\'; color:#ffaa00;\">formatted</span><span style=\"font-family:\'minecraft_font\';\"> </span><span style=\" font-family:\'minecraft_font\'; font-weight:700;\">string!</span></p></body></html>")
-        self.label.setText(_translate("JSONTextGenerator", "Enter formatted Text:"))
+        self.label_2.setText(_translate("self", "Preview Output (try to avoid gray):"))
+        self.saveButton.setText(_translate("self", "Save"))
+        self.cancelButton.setText(_translate("self", "Cancel"))
+        self.previewOutput.setDocumentTitle(_translate("self", "Preview Output"))
+        self.label.setText(_translate("self", "Enter formatted Text:"))
         self.tableWidget.setSortingEnabled(False)
         __sortingEnabled = self.tableWidget.isSortingEnabled()
         self.tableWidget.setSortingEnabled(False)
         item = self.tableWidget.item(0, 1)
-        item.setText(_translate("JSONTextGenerator", "black"))
+        item.setText(_translate("self", "black"))
         item = self.tableWidget.item(1, 1)
-        item.setText(_translate("JSONTextGenerator", "dark_blue"))
+        item.setText(_translate("self", "dark_blue"))
         item = self.tableWidget.item(2, 1)
-        item.setText(_translate("JSONTextGenerator", "dark_green"))
+        item.setText(_translate("self", "dark_green"))
         item = self.tableWidget.item(3, 1)
-        item.setText(_translate("JSONTextGenerator", "dark_aqua"))
+        item.setText(_translate("self", "dark_aqua"))
         item = self.tableWidget.item(4, 1)
-        item.setText(_translate("JSONTextGenerator", "dark_red"))
+        item.setText(_translate("self", "dark_red"))
         item = self.tableWidget.item(5, 1)
-        item.setText(_translate("JSONTextGenerator", "dark_purple"))
+        item.setText(_translate("self", "dark_purple"))
         item = self.tableWidget.item(6, 1)
-        item.setText(_translate("JSONTextGenerator", "gold"))
+        item.setText(_translate("self", "gold"))
         item = self.tableWidget.item(7, 1)
-        item.setText(_translate("JSONTextGenerator", "gray"))
+        item.setText(_translate("self", "gray"))
         item = self.tableWidget.item(8, 1)
-        item.setText(_translate("JSONTextGenerator", "dark_gray"))
+        item.setText(_translate("self", "dark_gray"))
         item = self.tableWidget.item(9, 1)
-        item.setText(_translate("JSONTextGenerator", "blue"))
+        item.setText(_translate("self", "blue"))
         item = self.tableWidget.item(10, 1)
-        item.setText(_translate("JSONTextGenerator", "green"))
+        item.setText(_translate("self", "green"))
         item = self.tableWidget.item(11, 1)
-        item.setText(_translate("JSONTextGenerator", "aqua"))
+        item.setText(_translate("self", "aqua"))
         item = self.tableWidget.item(12, 1)
-        item.setText(_translate("JSONTextGenerator", "red"))
+        item.setText(_translate("self", "red"))
         item = self.tableWidget.item(13, 1)
-        item.setText(_translate("JSONTextGenerator", "light_purple"))
+        item.setText(_translate("self", "light_purple"))
         item = self.tableWidget.item(14, 1)
-        item.setText(_translate("JSONTextGenerator", "yellow"))
+        item.setText(_translate("self", "yellow"))
         item = self.tableWidget.item(15, 1)
-        item.setText(_translate("JSONTextGenerator", "white"))
+        item.setText(_translate("self", "white"))
         item = self.tableWidget.item(16, 1)
-        item.setText(_translate("JSONTextGenerator", "obfuscated"))
+        item.setText(_translate("self", "obfuscated"))
         item = self.tableWidget.item(17, 1)
-        item.setText(_translate("JSONTextGenerator", "bold"))
+        item.setText(_translate("self", "bold"))
         item = self.tableWidget.item(18, 1)
-        item.setText(_translate("JSONTextGenerator", "striketrough"))
+        item.setText(_translate("self", "striketrough"))
         item = self.tableWidget.item(19, 1)
-        item.setText(_translate("JSONTextGenerator", "underline"))
+        item.setText(_translate("self", "underline"))
         item = self.tableWidget.item(20, 1)
-        item.setText(_translate("JSONTextGenerator", "italic"))
+        item.setText(_translate("self", "italic"))
         item = self.tableWidget.item(21, 1)
-        item.setText(_translate("JSONTextGenerator", "reset"))
+        item.setText(_translate("self", "reset"))
         item = self.tableWidget.item(22, 1)
-        item.setText(_translate("JSONTextGenerator", "New Line"))
+        item.setText(_translate("self", "New Line"))
 
     def actionSave(self):
-        raw_text = self.inputField.toPlainText().replace("\n", "\\n")
+        self.string = self.inputField.toPlainText().replace("\n", "\\n")
+        self.close()
 
-
+    def closeEvent(self, event):
+        if self.sender() == None:
+            warning = QtWidgets.QMessageBox.question(self, "Unsaved Changes", "Your Changes to the string haven't been saved! How to proceed?", QtWidgets.QMessageBox.Save | QtWidgets.QMessageBox.Close | QtWidgets.QMessageBox.Cancel, QtWidgets.QMessageBox.Cancel)
+            if warning == QtWidgets.QMessageBox.Save:
+                self.string = self.inputField.toPlainText().replace("\n", "\\n")
+                event.accept()
+            elif warning == QtWidgets.QMessageBox.Cancel:
+                event.ignore()
+        else:
+            event.accept()
 
     def UpdateHtml(self):
         global formatting_codes
@@ -725,8 +757,6 @@ class Ui_JSONTextGenerator(object):
                 thread = None
             html = raw_text
 
-
-
         if not self.alive.is_set():
             html = """<!DOCTYPE HTML PUBLIC "-//W3C//DTD HTML 4.0//EN" "http://www.w3.org/TR/REC-html40/strict.dtd"><html><head><meta name="qrichtext" content="1" /><title>ColorTests</title><style type="text/css">p, li { white-space: pre-wrap; }</style></head><body style="font-family:'minecraft_font'; font-size:15pt; font-weight:400; font-style:normal; background-image:url(src/background.jpg); color:#fff;"><p style=" margin-top:12px; margin-bottom:12px; margin-left:0px; margin-right:0px; -qt-block-indent:0; text-indent:0px;">""" + html + "</p></body></html>"
 
@@ -735,12 +765,4 @@ class Ui_JSONTextGenerator(object):
 
 
 if __name__ == "__main__":
-    import sys
-    app = QtWidgets.QApplication(sys.argv)
-    JSONTextGenerator = QtWidgets.QWidget()
-    ui = Ui_JSONTextGenerator()
-    ui.setupUi(JSONTextGenerator)
-    JSONTextGenerator.show()
-    JSONTextGenerator.setWindowTitle("Configure String")
-    sys.exit(app.exec_())
-    ui.alive.clear()
+    generator = Qt_JSONTextGenerator("hello")

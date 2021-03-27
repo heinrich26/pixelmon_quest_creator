@@ -1,20 +1,27 @@
-set#!/usr/bin/env python3
+#!/usr/bin/env python3
 import os
 import platform
+import json
+from uuid import UUID
+import string
+
+# import tkinter stuff
 from tkinter import *
 from tkinter import ttk
 from tkinter import filedialog
 from tkinter import messagebox
+from scrolled_frame import VerticalScrolledFrame
 try:
 	from PIL import Image, ImageTk
 	PIL = True
 except:
 	PIL = False
+
+# import side-modules
 from tooltip_class import CreateToolTip
-import json
-from uuid import UUID
-import string
 from json_text_generator import JSON_text_Generator
+from qt_json_text_generator import Qt_JSONTextGenerator
+
 stages = []
 strings = []
 final = {}
@@ -154,26 +161,65 @@ def new_stage(stage_id):
 	for x in stages:
 		x.refresh_id()
 
-# def select_new_sting_name():
-# 	new_string_name = StringVar(value="")
-# 	string_name_selector_window = Toplevel(root)
-# 	string_name_selector_window.title("Create new String")
-# 	string_name_selector_window.grab_set()
-# 	string_name_selector_window.focus_set()
-# 	ttk.Label(string_name_selector_window, text="Enter unique Identifier for new String:").grid(row=0, column=0, sticky=N+W, padx=4, pady=4)
-# 	ttk.Entry(string_name_selector_window, textvariable=new_string_name).grid(row=1, column=0, sticky=W+E, padx=10)
-# 	ttk.Button(string_name_selector_window, command=lambda: new_string(new_string_name.get()))
-# 	string_name_selector_window
-#
-# def new_string(name):
-# 	if not name in strings:
-# 		stages.append(str(name) = StringObj())
-# 	else:
-# 		messagebox.showmessage(text="Name is already in use!\nTry again!")
+def new_string_name():
+	string_name_selector_window = Toplevel(root)
+	string_name_selector_window.attributes("-topmost", True)
+	string_name_selector_window.title("Create new String")
+	string_name_selector_window.grab_set()
+	string_name_selector_window.focus_set()
+	new_string_name = StringVar(string_name_selector_window,value="")
+	ttk.Label(string_name_selector_window, text="Enter unique Identifier for new String:").grid(row=0, column=0, sticky=N+W, padx=4, pady=4)
+	ttk.Entry(string_name_selector_window, textvariable=new_string_name).grid(row=1, column=0, sticky=W+E, padx=10)
+	ttk.Button(string_name_selector_window, command=lambda: new_string(new_string_name.get(), string_name_selector_window, custom=True), text="Save").grid(row=2,column=1, padx=4, pady=4)
+
+def new_string(name, *args, custom=False):
+	if len(name) == 0 or not [True for char in name if char == "-" or char.isalnum()]:
+		# falschen Text entfernen
+		messagebox.showerror(message="A String Name cannot contain whitespaces or special characters, only 1-9, Letters and \'-\'s!\nTry again!")
+	elif not name in [string.name for string in strings]:
+		try:
+			args[0].destroy()
+		except:
+			pass
+		strings.append(StringObj(name, custom=custom))
+	else:
+		messagebox.showwarning(message="Name is already in use!\nTry again!")
 
 class StringObj(object):
-	def __init__(self):
-		self.string_frame = ttk.Frame(string_box)
+	def __init__(self, name, custom=False):
+		self.name = name
+		self.custom = custom
+		self.string_frame = ttk.Frame(string_frame.interior)
+		self.string_frame.pack(side=TOP, expand=1, fill=X)
+		self.string_frame.columnconfigure(0, weight=1)
+		slave_win = Toplevel(root)
+		slave_win.wm_overrideredirect(True)
+		slave_win.grab_set()
+		slave_win.geometry("0x0")
+		self.string_editor = Qt_JSONTextGenerator(self.name)
+		self.string_text = self.string_editor.string
+		slave_win.destroy()
+		self.labeled_button = ttk.Button(self.string_frame, text=self.name, command=self.edit_string)
+		self.labeled_button.grid(row=0, column=0, sticky=EW+S+N)
+		self.delete_button = ttk.Button(self.string_frame, image=delete, command=self.rm)
+		self.delete_button.grid(row=0, column=1, sticky=E)
+		self.del_tooltip = Delete_Tooltip(self.delete_button, text="Delete this String")
+
+	def rm(self):
+		if self.custom:
+			self.string_frame.destroy()
+			strings.remove(self)
+			del self
+
+	def edit_string(self):
+		slave_win = Toplevel(root)
+		slave_win.wm_overrideredirect(True)
+		slave_win.grab_set()
+		slave_win.geometry("0x0")
+		self.string_editor.edit_string()
+		self.string_text = self.string_editor.string
+		slave_win.destroy()
+
 
 class Arrowed_Tooltip(object):
 	def __init__(self, widget, text='widget info', bg_color="orange red"):
@@ -241,8 +287,8 @@ class Stage:
 	def __init__(self, this_stage):
 		self.objectives = []
 		self.stage = IntVar()
-		self.container = ttk.Frame(stage_frame, borderwidth=2, relief="ridge", width=2)
-		self.container.grid(row=this_stage, sticky="nwse", column=0, pady=(4,0), padx=0)
+		self.container = ttk.Frame(stage_frame.interior, borderwidth=2, relief="ridge")
+		self.container.grid(row=this_stage, sticky="nwse", column=0, pady=(4,0), padx=4)
 		self.container.columnconfigure(1, weight=1)
 		self.idbox = ttk.Frame(self.container)
 		self.idbox.grid(sticky=W, column=0)
@@ -1035,14 +1081,23 @@ def write_stage_data():
 	return stage_list
 
 def _bound_to_mousewheel(event):
-    fake_canvas.bind_all("<MouseWheel>", _on_mousewheel)
+	if event.widget.winfo_name() == "!frame":
+		fake_canvas.bind_all("<MouseWheel>", lambda e: _on_mousewheel(e,"stage"))
+	else:
+		fake_string_canvas.bind_all("<MouseWheel>", lambda e: _on_mousewheel(e,"string"))
 
 def _unbound_to_mousewheel(event):
-    fake_canvas.unbind_all("<MouseWheel>")
+	if event.widget.winfo_name() == "!frame":
+		fake_canvas.unbind_all("<MouseWheel>")
+	else:
+		fake_string_canvas.unbind_all("<MouseWheel>")
 
-def _on_mousewheel(event):
-    fake_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
-
+def _on_mousewheel(event, name):
+	if name == "stage":
+		fake_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+	else:
+		fake_string_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
+		print(string_scrollbar.get(), fake_string_canvas.yview)
 
 
 root = Tk()
@@ -1086,56 +1141,21 @@ style.configure("Red.TEntry",
 master = ttk.Frame(root, pad=(4,4))
 master.columnconfigure(1,weight=1, minsize=100)
 master.columnconfigure(0,weight=0, minsize=40)
-master.rowconfigure((6,7), weight=1)
+master.rowconfigure(6, weight=3)
 master.pack(fill=BOTH, expand=1)
 
 int_validation = root.register(only_numbers)
 natural_num_validation = root.register(only_natural_numbers)
 
 #stage_box & scrollbar stuff
-stage_box=ttk.Frame(master, width=302)
-stage_box.grid(row=6, column=0, columnspan=2, sticky="wnse", padx=(40,0))
-stage_box.bind('<Enter>', _bound_to_mousewheel)
-stage_box.bind('<Leave>', _unbound_to_mousewheel)
-stage_box_sub1=ttk.Frame(stage_box)
-stage_box_sub1.grid(row=0,column=0,sticky="nesw")
+stage_frame = VerticalScrolledFrame(master, width=290, height=120, bd=1, relief="sunken")
+stage_frame.grid(row=6, column=0, columnspan=2, sticky=E+N+S+W, padx=(40,0), pady=4)
+stage_frame.interior.columnconfigure(0,weight=1)
 
-fake_canvas = Canvas(stage_box_sub1, highlightthickness=0, width=286)
-
-stage_scrollbar = ttk.Scrollbar(stage_box, command=fake_canvas.yview, style="Scroller.Vertical.TScrollbar")
-stage_scrollbar.grid(row=0,column=1, sticky=N+S)
-
-fake_canvas.pack(fill=Y, padx=0)
-
-stage_frame = ttk.Frame(fake_canvas, pad=0)
-stage_frame.columnconfigure(0, weight=1, minsize=285)
-
-fake_canvas.configure(yscrollcommand=stage_scrollbar.set)
-fake_canvas.create_window((0,0), window=stage_frame, anchor="nw")
-
-stage_frame.bind('<Configure>', lambda e: fake_canvas.configure(scrollregion=fake_canvas.bbox('all')))
-
-string_box=ttk.Frame(master, width=322)
-string_box.grid(row=8, column=0, columnspan=2, sticky="wnse", padx=(20,0), pady=8)
-string_box.bind('<Enter>', _bound_to_mousewheel)
-string_box.bind('<Leave>', _unbound_to_mousewheel)
-string_box_sub1=ttk.Frame(string_box)
-string_box_sub1.grid(row=0,column=0,sticky="nesw")
-
-fake_string_canvas = Canvas(string_box_sub1, highlightthickness=0, width=306)
-
-string_scrollbar = ttk.Scrollbar(string_box, command=fake_string_canvas.yview, style="Scroller.Vertical.TScrollbar")
-string_scrollbar.grid(row=0,column=1, sticky=N+S)
-
-fake_string_canvas.pack(fill=Y, padx=0)
-
-string_frame = ttk.Frame(fake_string_canvas, pad=0)
-string_frame.columnconfigure(0, weight=1, minsize=306)
-
-fake_string_canvas.configure(yscrollcommand=string_scrollbar.set)
-fake_string_canvas.create_window((0,0), window=string_frame, anchor="nw")
-
-string_frame.bind('<Configure>', lambda e: fake_canvas.configure(scrollregion=fake_canvas.bbox('all')))
+string_frame = VerticalScrolledFrame(master, width=290, height=20, bd=1, relief="sunken")
+string_frame.grid(row=8, column=0, columnspan=2, sticky="wnse", padx=(40,0), pady=4)
+string_frame.interior.columnconfigure(0,weight=1)
+master.rowconfigure(8, weight=1)
 
 
 radiant = BooleanVar()
@@ -1155,8 +1175,8 @@ activeStage.grid(row=4, column=1, sticky=E+W)
 ttk.Label(master, text="Stages:").grid(row=5, sticky=W, padx=(20,0))
 new_stage(0)
 
-# string definition
-#string_frame =
+new_string_button = ttk.Button(master, command=new_string_name, text="New String")
+new_string_button.grid(row=9, column=0, columnspan=3, pady=(4,20), padx=(40,0))
 
 def minimize():
 	minimizeButton.winfo_toplevel().iconify()
@@ -1167,7 +1187,7 @@ def sizes():
 
 ttk.Label(master, text="Strings:").grid(row=7, sticky=W, padx=(20,0))
 bottom_frame = ttk.Frame(master)
-bottom_frame.grid(row=9, columnspan=2, sticky=S)
+bottom_frame.grid(row=11, columnspan=2, sticky=S)
 ttk.Button(bottom_frame, text='Quit', command=root.quit).grid(column=0, sticky=S)
 ttk.Button(bottom_frame, text='Show', command=create_json).grid(row=0, column=1, sticky=S)
 ttk.Button(bottom_frame, text="BBox", command=lambda:print(sizes())).grid(column=3,row=0,sticky=S)

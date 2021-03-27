@@ -5,9 +5,6 @@ from tkinter.font import Font
 from tkinter import font
 import random
 import pyglet
-from tkinterhtml import HtmlFrame
-
-# This restores the same behavior as before.
 
 current_os = platform.system()
 
@@ -39,42 +36,70 @@ formatting_codes = {
     "§o": "\"font-style: italic\""
 }
 
-# formatting_codes = [
-#     "§0",
-#     "§1",
-#     "§2",
-#     "§3",
-#     "§4",
-#     "§5",
-#     "§6",
-#     "§7",
-#     "§8",
-#     "§9",
-#     "§a",
-#     "§b",
-#     "§c",
-#     "§d",
-#     "§e",
-#     "§f",
-#     "§k",
-#     "§l",
-#     "§m",
-#     "§n",
-#     "§o"
-# ]
-#
+formatting_keys = [
+    "§0",
+    "§1",
+    "§2",
+    "§3",
+    "§4",
+    "§5",
+    "§6",
+    "§7",
+    "§8",
+    "§9",
+    "§a",
+    "§b",
+    "§c",
+    "§d",
+    "§e",
+    "§f",
+    "§k",
+    "§l",
+    "§m",
+    "§n",
+    "§o"
+]
+
 formatting_names = [ "black","dark_blue","dark_green","dark_aqua","dark_red","dark_purple","gold","gray","dark_gray","blue","green","aqua","red","light_purple","yellow","white","obfuscated","bold","strikethrough","underline","italic","reset", "New Line" ]
 
-def find_all(str, sub):
-    start = 0
-    while True:
-        start = str.find(sub, start)
-        if start == -1: return
-        yield start
-        start += len(sub)
+formats = {
+    "red": "#FF5555",
+    "blue": "#5555FF",
+    "green": "#55FF55",
+    "dark_blue": "#0000AA",
+    "dark_aqua": "#00AAAA",
+    "white": "#ffffff",
+    "black": "#000000",
+    "dark_gray": "#555555",
+    "gray": "#AAAAAA",
+    "dark_purple": "#AA00AA",
+    "light_purple": "#FF55FF",
+    "dark_red": "#AA0000",
+    "yellow": "#FFFF55",
+    "gold": "#FFAA00",
+    "aqua": "#55FFFF",
+    "dark_green": "#00AA00",
+    "strikethrough": "overstrike",
+    "underline": "underline",
+    "bold": "bold",
+    "italic": "italic",
+    "obfuscated": ""
+}
 
-
-
+def rm_unused(tuple):
+    new_tuple = tuple.copy()
+    for key in new_tuple:
+        if len(new_tuple[key]) >= 2:
+            for format in new_tuple[key]:
+                if format in formatting_names[0:16]:
+                    for name in formatting_names[0:16]:
+                        if str(name) != str(format) and name in new_tuple[key]:
+                            new_tuple[key].remove(name)
+                    break
+            for format in new_tuple[key]:
+                for i in range(1,new_tuple[key].count(format)):
+                    new_tuple[key].remove(format)
+    return new_tuple
 
 alphabet = [
 "i,;.:!|î", # 1px
@@ -85,14 +110,19 @@ alphabet = [
 "~@®÷±"]
 
 class animate_obfuscated_text(object):
-    def __init__(self, parent, var, text):
-        self.parent = parent
-        self.var = var
+    def __init__(self, text, starts, ends):
         self.text = text
-        self.new_text = "".join([self.randchar(char) for char in self.text])
-        self.var.set(self.text)
-        self.parent.after(100, self.refresh)
+        self.starts = starts
+        self.ends = ends
 
+    def animate_text(self):
+        return self.text[0:self.starts[0]] + "".join([self.randtext(i) + self.text[self.ends[i]:self.starts[i+1]] if len(self.starts)-1 != i else self.randtext(i) + self.text[self.ends[i]:] for i in range(0, len(self.starts))])
+
+    def next(self):
+        return self.animate_text()
+
+    def randtext(self, i):
+        return "".join([self.randchar(char) for char in self.text[self.starts[i]:self.ends[i]]])
 
     def randchar(self, i):
         global alphabet
@@ -113,9 +143,9 @@ class animate_obfuscated_text(object):
         else:
             return i
 
-    def refresh(self):
-        self.var.set("".join([self.randchar(char) for char in self.text]))
-        self.parent.after(100, self.refresh)
+    # def refresh(self):
+    #     self.var.set("".join([self.randchar(char) for char in self.text]))
+    #     self.parent.after(100, self.refresh)
 
 
 class JSON_text_Generator(object):
@@ -123,6 +153,7 @@ class JSON_text_Generator(object):
 
     def __init__(self, text=""):
         self.text = text
+        self.alive = False
         if __name__ == "__main__":
             self.json_frame = ttk.Frame(root)
             self.json_frame.pack(fill=BOTH, expand=1)
@@ -130,24 +161,25 @@ class JSON_text_Generator(object):
             self.json_frame = Toplevel(root)
             self.json_frame.title("Configure JSON Text")
             self.json_frame.grab_set()
-            self.json_frame.maxsize(500, 200)
+            self.json_frame.minsize(800, self.json_frame.winfo_height())
         self.user_input=""
         self.json_frame.columnconfigure(0, weight=1, minsize=300)
-        ttk.Label(self.json_frame, text="Enter formatted Text:").grid(row=0, column=0, sticky=W, pady=4, padx=4)
+        ttk.Label(self.json_frame, text="Enter formatted Text (try to avoid gray):").grid(row=0, column=0, sticky=W, pady=4, padx=4)
         self.text_field = Text(self.json_frame, font=("Minecraft Regular", 16), height=6, width=30, wrap=WORD)
         self.text_field.insert(1.0, self.user_input)
-        self.text_field.grid(row=1, column=0, padx=(4,0), sticky=W+E)
-        self.text_field.bind("<KeyRelease>", self.update_prev_text)
+        self.text_field.grid(row=1, column=0, padx=(4,0), sticky="nesw")
+        self.text_field.bind("<KeyRelease>", self.UpdateHtml)
         self.text_scrollbar = ttk.Scrollbar(self.json_frame, orient=VERTICAL, command=self.text_field.yview)
         self.text_scrollbar.grid(row=1,column=1,sticky=N+S+W, padx=(0,4))
         self.text_field["yscrollcommand"] = self.text_scrollbar.set
-        ttk.Label(self.json_frame, text="Preview Output (obfuscated is not acurate):").grid(row=2, column=0, sticky=W, pady=4, padx=4)
-        #self.prev_field = HTMLScrolledText(self.json_frame, html="", font=("Minecraft Regular", 16), width=30, takefocus=0, state="disabled", height=6)
-        self.json_frame.rowconfigure(3, weight=1)
-        limiter  = ttk.Frame(self.json_frame, width=10, height=4)
-        limiter.grid(row=3, column=0, padx=4, pady=(0,4), columnspan=2)
-        self.prev_field = HtmlFrame(limiter, takefocus=0, relief="sunken", borderwidth=1)
-        self.prev_field.pack(pady=(0,4))
+        ttk.Label(self.json_frame, text="Preview Output:").grid(row=2, column=0, sticky=W, pady=4, padx=4)
+        self.json_frame.rowconfigure((1,3), weight=1)
+        self.prev_field = Text(self.json_frame, font=("Minecraft Regular", 16), height=6, width=30, wrap=WORD, foreground="#fff", background="#AEAEAE")
+        self.prev_field.grid(row=3, column=0, padx=(4,0), sticky="nesw")
+        self.prev_field.bind('<Key>', lambda event: "break")
+        self.prev_scrollbar = ttk.Scrollbar(self.json_frame, orient=VERTICAL, command=self.prev_field.yview)
+        self.prev_scrollbar.grid(row=3, column=1, sticky=N+S+W, padx=(0,4))
+        self.prev_field["yscrollcommand"] = self.prev_scrollbar.set
 
         self.formatting_info = Frame(self.json_frame, bg="#a2a9b1")
         self.formatting_info.grid(row=0, column=2, padx=4, rowspan=4, sticky=N, pady=(4,0))
@@ -175,9 +207,7 @@ class JSON_text_Generator(object):
             elif i in (15,21,22):
                 ttk.Label(self.formatting_info, anchor="c", background="white", font=("Minecraft Regular", 9), text=formatting_names[i]).grid(row=i+1, column=1, sticky=W+E, pady=(0,1), padx=(0,1))
 
-        self.obfuscated_text = StringVar()
-        # self.obfuscated_image_cnt =
-        # self.obfuscated_image = [PhotoImage(file='src/obfuscated.gif',format = 'gif -index %i' %(i)) for i in range(self.obfuscated_image_cnt)]
+        self.obfuscated_text = StringVar(value="obfuscated")
         self.obfuscated_example = ttk.Label(self.formatting_info, background="white", anchor="c", font=("Minecraft Regular", 9), width=10, textvariable=self.obfuscated_text, foreground="#000")
         self.obfuscated_example.grid(row=17, column=1, sticky=W+E, pady=(0,1), padx=(0,1))
 
@@ -186,31 +216,6 @@ class JSON_text_Generator(object):
         ttk.Label(self.formatting_info, background="white", anchor="c", font=("Minecraft Regular", 9, "underline"), text=formatting_names[19], foreground="#000").grid(row=20, column=1, sticky=W+E, pady=(0,1), padx=(0,1))
         ttk.Label(self.formatting_info, background="white", anchor="c", font=("Minecraft Regular", 9, "italic"), text=formatting_names[20], foreground="#000").grid(row=21, column=1, sticky=W+E, pady=(0,1), padx=(0,1))
 
-        # formatting_info.insert("", 21, "§r", text="§r", values=("reset"), tags="black")
-        # formatting_info.set("§k","§k")
-        #
-        # formatting_info.tag_configure("red", foreground="#FF5555", font=("Minecraft Regular", 10))
-        # formatting_info.tag_configure("blue", foreground="#5555FF", font=("Minecraft Regular", 10))
-        # formatting_info.tag_configure("green", foreground="#55FF55", font=("Minecraft Regular", 10))
-        # formatting_info.tag_configure("dark_blue", foreground="#0000AA", font=("Minecraft Regular", 10))
-        # formatting_info.tag_configure("dark_aqua", foreground="#00AAAA", font=("Minecraft Regular", 10))
-        # formatting_info.tag_configure("white", foreground="#ffffff", background="#AAAAAA", font=("Minecraft Regular", 10))
-        # formatting_info.tag_configure("black", foreground="#000000", font=("Minecraft Regular", 10))
-        # formatting_info.tag_configure("dark_gray", foreground="#555555", font=("Minecraft Regular", 10))
-        # formatting_info.tag_configure("gray", foreground="#AAAAAA", font=("Minecraft Regular", 10))
-        # formatting_info.tag_configure("dark_purple", foreground="#AA00AA", font=("Minecraft Regular", 10))
-        # formatting_info.tag_configure("light_purple", foreground="#FF55FF", font=("Minecraft Regular", 10))
-        # formatting_info.tag_configure("dark_red", foreground="#AA0000", font=("Minecraft Regular", 10))
-        # formatting_info.tag_configure("yellow", foreground="#FFFF55", background="#AAAAAA", font=("Minecraft Regular", 10))
-        # formatting_info.tag_configure("gold", foreground="#FFAA00", font=("Minecraft Regular", 10))
-        # formatting_info.tag_configure("aqua", foreground="#55FFFF", font=("Minecraft Regular", 10))
-        # formatting_info.tag_configure("dark_green", foreground="#00AA00", font=("Minecraft Regular", 10))
-        # formatting_info.tag_configure("bold", font=("Minecraft Regular", 10, "bold"))
-        # formatting_info.tag_configure("italic", font=("Minecraft Regular", 10, "italic"))
-        # formatting_info.tag_configure("obfuscated", foreground="#000000",font=("Minecraft Regular", 10), image=self.obfuscated)
-        # formatting_info.tag_configure("underline", font=("Minecraft Regular", 10, "underline"))
-        # formatting_info.tag_configure("striketrough", font=("Minecraft Regular", 10, "overstrike"))
-        anim_text = animate_obfuscated_text(root, self.obfuscated_text, "Obfuscated")
         ttk.Button(self.json_frame, text="Save", command=self.save_input).grid(row=4, column=3, padx=4, pady=4)
 
     def save_input(self):
@@ -227,55 +232,107 @@ class JSON_text_Generator(object):
         print(self.output_string)
 
 
-    def update_prev_text(self, e):
-        global color_formatting
-        user_input = self.text_field.get(1.0,END).replace("\n", "<br>").replace("\\n", "<br>")
-        
-        # replacements = 0
-        formatted_string = str(user_input)
-        formatted_string = formatted_string.replace("§r", "</span>")
-        for key in list(formatting_codes.keys()):
-            formatted_string = formatted_string.replace(key,"<span style=" + formatting_codes[key] + ">")
-        spans_to_close = 0
-        spans_to_close = formatted_string.count("<span style=") - formatted_string.count("</span>")
-        spans = []
-        formatted_string += "".join("</span>" for i in range(0, spans_to_close))
-
-        html = """<html><body style="background:#000;word-warp:break-word;font-family:minecraft_font;font-size:26px;color:#fff;width:500px;">""" + str(formatted_string) + "</body></html>"
-        self.prev_field.set_content(html)
+    def setup_tag(self, inp_stack):
+        global formats
+        args = { "font": ["Minecraft Regular", 16] }
+        for format in inp_stack:
+            if formats[format] == "":
+                pass
+            elif formats[format][0] == "#":
+                args["foreground"] = formats[format]
+            else:
+                args["font"].append(formats[format])
+        args["font"] = tuple(args["font"])
+        return args
 
 
-        #self.prev_field.set_html(html)
-        # print(user_input, type(user_input))
-        # formatting_info.delete(0.0,END)
-        # [self.prev_field.mark_unset(mark) for mark in self.prev_field.mark_names()[2:]]
-        # formatting_info.insert(0.0, user_input)
-        # replacements = 0
-        # for x in formatting_codes:
-        #     counter = 0
-        #     for occurance in list(find_all(user_input, x)):
-        #         self.prev_field.mark_set(formatting_tags[formatting_codes.index(x)] + "-" + str(counter), float("1." + str(occurance-replacements*2)))
-        #         self.prev_field.delete(float("1." + str(occurance-replacements*2)), float("1." + str(occurance+2-replacements*2)))
-        #         print(float("1." + str(occurance+2-replacements*2)))
-        #         counter += 1
-        #         replacements += 1
-        # print(self.prev_field.mark_names(),self.prev_field.get(1.0,END))
-        # for mark in self.prev_field.mark_names()[2:]:
-        #     self.prev_field.tag_add(mark.split("-")[0], self.prev_field.index(mark), END)
+    def obfuscated_thread(self):
+        self.prev_field.delete(1.0,END)
+        self.prev_field.insert(1.0, self.animated_text.next())
+        for i in self.tags.keys():
+            self.prev_field.tag_add(i, *self.tag_ranges[i])
+            self.prev_field.tag_config(i, **self.tags[i])
+        if self.alive:
+            self.prev_field.after(80, self.obfuscated_thread)
 
-        # if "§" in user_input:
-        #     index = user_input.find("§")
-        #     index2 = user_input.find("§", index+1)
-        #     if user_input[index+1] in color_formatting and user_input[index2:index2+2] == "§r":
-        #         prev_field.bind()
 
+    def UpdateHtml(self, e):
+        if self.alive:
+            self.alive = False
+        def mk_pos(index):
+            if "\n" in raw_text[0:index]:
+                new_index = str(index - raw_text.rfind("\n", 0, index)-1)
+            else:
+                new_index = str(index)
+            return str(1 + raw_text.count("\n", 0, index)) + "." + new_index
+
+        def obfuscated_finder(stack_pos):
+            if "obfuscated" in stack[stack_keys[stack_pos]]:
+                obfuscated_starts.append(stack_keys[stack_pos])
+                obfuscated_ends.append(stack_keys[stack_pos+1])
+
+        global formatting_keys
+        global formatting_names
+        raw_text = self.text_field.get(1.0,END).replace("\\n", "\n").rstrip("\n")
+
+        # stacks
+        if len(raw_text) >= 3:
+            replacements = 0
+            stack = {}
+            for i in range(0, len(raw_text)-1):
+                if raw_text[i:i+2] in formatting_keys:
+                    if len(stack) >= 1:
+                        stack[i-replacements] = list(stack[max(stack.keys())])
+                    else:
+                        stack[i-replacements] = []
+                    stack[i-replacements].insert(0,formatting_names[formatting_keys.index(raw_text[i:i+2])])
+                    replacements += 2
+                    i += 1
+                if raw_text[i:i+2] == "§r":
+                    stack[i-replacements] = []
+                    i += 1
+                    replacements += 2
+            if replacements != 0:
+                for code in formatting_keys:
+                    raw_text = raw_text.replace(code, "")
+                raw_text = raw_text.replace("§r", "")
+                stack[len(raw_text)] = []
+
+
+            obfuscated_starts = []
+            obfuscated_ends = []
+
+
+            stack = rm_unused(stack)
+            stack_keys = list(stack.keys())
+            stack_keys.sort()
+            self.prev_field.delete(1.0,END)
+            for tag in self.prev_field.tag_names():
+                self.prev_field.tag_delete(tag)
+            self.prev_field.insert(0.0, str(raw_text))
+            for i in range(0,len(stack_keys)):
+                if stack[stack_keys[i]] != []:
+                    self.prev_field.tag_add(i, mk_pos(stack_keys[i]), mk_pos(stack_keys[i+1]))
+                    self.prev_field.tag_config(i, **self.setup_tag(stack[stack_keys[i]]))
+                    obfuscated_finder(i)
+
+
+            if obfuscated_starts != []:
+                self.alive = True
+                self.animated_text = animate_obfuscated_text(raw_text, obfuscated_starts, obfuscated_ends)
+                self.tags = {i:self.setup_tag(stack[stack_keys[i]]) for i in range(0,len(stack_keys)) if stack[stack_keys[i]]}
+                self.tag_ranges = {i:(mk_pos(stack_keys[i]), mk_pos(stack_keys[i+1])) for i in range(0,len(stack_keys)) if stack[stack_keys[i]]}
+                self.prev_field.after(1,self.obfuscated_thread)
+        else:
+            self.prev_field.delete(1.0,END)
+            self.prev_field.insert(1.0, raw_text)
 
 
 if __name__ == "__main__":
 
     root = Tk()
     root.title("JSON Text Generator")
-    root.maxsize(800, 591)
+    root.minsize(800, root.winfo_height())
     mcfont = font.Font(name="mc font", family="mc font", font=("Minecraft Regular", 16))
 
     app = JSON_text_Generator()
