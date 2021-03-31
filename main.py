@@ -20,7 +20,7 @@ except:
 # import side-modules
 from tooltip_class import CreateToolTip
 from json_text_generator import JSON_text_Generator
-from qt_json_text_generator import Qt_JSONTextGenerator
+# from qt_json_text_generator import Qt_JSONTextGenerator
 
 stages = []
 strings = []
@@ -196,8 +196,8 @@ class StringObj(object):
 		slave_win.wm_overrideredirect(True)
 		slave_win.grab_set()
 		slave_win.geometry("0x0")
-		self.string_editor = Qt_JSONTextGenerator(self.name)
-		self.string_text = self.string_editor.string
+		# self.string_editor = Qt_JSONTextGenerator(self.name)
+		# self.string_text = self.string_editor.string
 		slave_win.destroy()
 		self.labeled_button = ttk.Button(self.string_frame, text=self.name, command=self.edit_string)
 		self.labeled_button.grid(row=0, column=0, sticky=EW+S+N)
@@ -1079,25 +1079,6 @@ def write_stage_data():
 			for objective in stage.objectives:
 				stage_list[-1]["objectives"].append(objective.makestr())
 	return stage_list
-
-def _bound_to_mousewheel(event):
-	if event.widget.winfo_name() == "!frame":
-		fake_canvas.bind_all("<MouseWheel>", lambda e: _on_mousewheel(e,"stage"))
-	else:
-		fake_string_canvas.bind_all("<MouseWheel>", lambda e: _on_mousewheel(e,"string"))
-
-def _unbound_to_mousewheel(event):
-	if event.widget.winfo_name() == "!frame":
-		fake_canvas.unbind_all("<MouseWheel>")
-	else:
-		fake_string_canvas.unbind_all("<MouseWheel>")
-
-def _on_mousewheel(event, name):
-	if name == "stage":
-		fake_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
-	else:
-		fake_string_canvas.yview_scroll(int(-1*(event.delta/120)), "units")
-		print(string_scrollbar.get(), fake_string_canvas.yview)
 
 
 root = Tk()
