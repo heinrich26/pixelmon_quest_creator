@@ -169,12 +169,11 @@ def new_string_name():
 	string_name_selector_window.wait_visibility()
 	string_name_selector_window.grab_set()
 	string_name_selector_window.bind_all("<Return>", lambda event: new_string(new_string_name.get(), string_name_selector_window, custom=True))
-	new_string_name = StringVar(string_name_selector_window,value="")
 	ttk.Label(string_name_selector_window, text="Enter unique Identifier for new String:").grid(row=0, column=0, sticky=N+W, padx=4, pady=4)
-	string_name_entry = ttk.Entry(string_name_selector_window, textvariable=new_string_name)
+	string_name_entry = ttk.Entry(string_name_selector_window)
 	string_name_entry.grid(row=1, column=0, sticky=W+E, padx=10)
 	string_name_entry.focus_set()
-	ttk.Button(string_name_selector_window, command=lambda: new_string(new_string_name.get(), string_name_selector_window, custom=True), text="Save").grid(row=2,column=1, padx=4, pady=4)
+	ttk.Button(string_name_selector_window, command=lambda: new_string(string_name_entry.get(), string_name_selector_window, custom=True), text="Save").grid(row=2,column=0, padx=4, pady=(8,4))
 
 def new_string(name, *args, custom=False):
 	if len(name) == 0 or not [True for char in name if char == "-" or char.isalnum()]:
@@ -188,6 +187,7 @@ def new_string(name, *args, custom=False):
 		strings.append(StringObj(name, custom=custom))
 	else:
 		messagebox.showwarning(message="Name is already in use!\nTry again!")
+		print(args[0].string_name_entry)
 
 class StringObj(object):
 	def __init__(self, name, custom=False):
@@ -1130,11 +1130,11 @@ int_validation = root.register(only_numbers)
 natural_num_validation = root.register(only_natural_numbers)
 
 #stage_box & scrollbar stuff
-stage_frame = VerticalScrolledFrame(master, width=290, height=120, bd=1, relief="sunken")
+stage_frame = VerticalScrolledFrame(master, width=290, height=120, borderwidth=1, relief="sunken")
 stage_frame.grid(row=6, column=0, columnspan=2, sticky=E+N+S+W, padx=(40,0), pady=4)
 stage_frame.interior.columnconfigure(0,weight=1)
 
-string_frame = VerticalScrolledFrame(master, width=290, height=20, bd=1, relief="sunken")
+string_frame = VerticalScrolledFrame(master, width=290, height=20, borderwidth=1, relief="sunken")
 string_frame.grid(row=8, column=0, columnspan=2, sticky="wnse", padx=(40,0), pady=4)
 string_frame.interior.columnconfigure(0,weight=1)
 master.rowconfigure(8, weight=1)

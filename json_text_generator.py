@@ -180,6 +180,7 @@ class JSON_text_Generator(object):
 		self.text_field.insert(1.0, self.user_input)
 		self.text_field.grid(row=1, column=0, padx=(4,0), sticky="nesw")
 		self.text_field.bind("<KeyRelease>", self.UpdatePreview)
+		self.text_field.focus_set()
 		self.text_scrollbar = ttk.Scrollbar(self.json_frame, orient=VERTICAL, command=self.text_field.yview)
 		self.text_scrollbar.grid(row=1, column=1, sticky=N+S+W, padx=(0,4))
 		self.text_field["yscrollcommand"] = self.text_scrollbar.set
@@ -307,7 +308,7 @@ class JSON_text_Generator(object):
 			self.prev_field.after(80, self.obfuscated_thread)
 
 
-	def UpdatePreview(self, e):
+	def UpdatePreview(self, event):
 		if self.alive:
 			self.alive = False
 		def mk_pos(index):
@@ -325,7 +326,9 @@ class JSON_text_Generator(object):
 		global formatting_keys
 		global formatting_names
 		try:
-			raw_text = self.text_field.get(1.0,END).replace("\\n", "\n").rstrip("\n")
+			raw_text = self.text_field.get(1.0,END).replace("\\n", "\n").replace("&r", "§r").rstrip("\n")
+			for key in formatting_keys:
+				raw_text = raw_text.replace("&" + key[1], key)
 		except:
 			# assume window is gone
 			return
