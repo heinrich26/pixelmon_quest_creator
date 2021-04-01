@@ -98,7 +98,7 @@ objective_data_req = [
 	[]
 ]
 
-objective_data_req[3]=objective_data_req[2]
+objective_data_req[3] = objective_data_req[2]
 objective_data_req[4] = objective_data_req[6] = objective_data_req[7] = objective_data_req[13] = objective_data_req[14] = objective_data_req[15] = objective_data_req[16] = objective_data_req[17] = objective_data_req[1]
 objective_data_req[20] = objective_data_req[21] = objective_data_req[22] = objective_data_req[23] = objective_data_req[24] = objective_data_req[25] = objective_data_req[26] = objective_data_req[19]
 objective_data_req[30] = objective_data_req[11]
@@ -165,11 +165,15 @@ def new_string_name():
 	string_name_selector_window = Toplevel(root)
 	string_name_selector_window.attributes("-topmost", True)
 	string_name_selector_window.title("Create new String")
+	string_name_selector_window.transient(root)
+	string_name_selector_window.wait_visibility()
 	string_name_selector_window.grab_set()
-	string_name_selector_window.focus_set()
+	string_name_selector_window.bind_all("<Return>", lambda event: new_string(new_string_name.get(), string_name_selector_window, custom=True))
 	new_string_name = StringVar(string_name_selector_window,value="")
 	ttk.Label(string_name_selector_window, text="Enter unique Identifier for new String:").grid(row=0, column=0, sticky=N+W, padx=4, pady=4)
-	ttk.Entry(string_name_selector_window, textvariable=new_string_name).grid(row=1, column=0, sticky=W+E, padx=10)
+	string_name_entry = ttk.Entry(string_name_selector_window, textvariable=new_string_name)
+	string_name_entry.grid(row=1, column=0, sticky=W+E, padx=10)
+	string_name_entry.focus_set()
 	ttk.Button(string_name_selector_window, command=lambda: new_string(new_string_name.get(), string_name_selector_window, custom=True), text="Save").grid(row=2,column=1, padx=4, pady=4)
 
 def new_string(name, *args, custom=False):
@@ -192,13 +196,8 @@ class StringObj(object):
 		self.string_frame = ttk.Frame(string_frame.interior)
 		self.string_frame.pack(side=TOP, expand=1, fill=X)
 		self.string_frame.columnconfigure(0, weight=1)
-		slave_win = Toplevel(root)
-		slave_win.wm_overrideredirect(True)
-		slave_win.grab_set()
-		slave_win.geometry("0x0")
-		# self.string_editor = Qt_JSONTextGenerator(self.name)
-		# self.string_text = self.string_editor.string
-		slave_win.destroy()
+		self.string_editor = JSON_text_Generator(root, self.name)
+		self.string_text = self.string_editor.user_input
 		self.labeled_button = ttk.Button(self.string_frame, text=self.name, command=self.edit_string)
 		self.labeled_button.grid(row=0, column=0, sticky=EW+S+N)
 		self.delete_button = ttk.Button(self.string_frame, image=delete, command=self.rm)
@@ -212,13 +211,15 @@ class StringObj(object):
 			del self
 
 	def edit_string(self):
-		slave_win = Toplevel(root)
-		slave_win.wm_overrideredirect(True)
-		slave_win.grab_set()
-		slave_win.geometry("0x0")
-		self.string_editor.edit_string()
-		self.string_text = self.string_editor.string
-		slave_win.destroy()
+		self.string_text = self.string_editor.edit_string()
+		print(self.string_text, self.encode_string())
+
+	def encode_string(self):
+		allowed_chars = "ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz1234567890,.!/()[]{}?\+*\"\'#-_<>|%= "
+		output_list = [str("\\u0000"[0:6-len(str(ord(char)))] + str(ord(char))) if not char in allowed_chars else char for char in self.string_text.replace('\"', '\\"').replace("\'", "\\'")]
+		output = "".join(output_list)
+		return output
+		
 
 
 class Arrowed_Tooltip(object):

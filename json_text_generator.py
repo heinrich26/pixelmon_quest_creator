@@ -150,33 +150,43 @@ class animate_obfuscated_text(object):
 
 
 class JSON_text_Generator(object):
-	"""docstring for JSON_text_Generator."""
-
-	def __init__(self, string_name):
+	def __init__(self, master, string_name):
 		self.string_name = string_name
+		self.user_input = "This is a §6formatted§r §lstring!"
+		self.parent = master
+		self.edit_string()
+
+	def edit_string(self):
 		self.alive = False
 		if __name__ == "__main__":
 			self.json_frame = ttk.Frame(root)
 			self.json_frame.pack(fill=BOTH, expand=1)
 			root.protocol("WM_DELETE_WINDOW", self.close_event)
 		else:
-			self.json_frame = Toplevel(root)
+			self.json_frame = Toplevel(self.parent)
 			self.json_frame.title("Configure JSON Text")
 			self.json_frame.grab_set()
+			self.json_frame.transient(self.parent)
 			self.json_frame.minsize(800, self.json_frame.winfo_height())
 			self.json_frame.protocol("WM_DELETE_WINDOW", self.close_event)
-		self.user_input= "This is a §6formatted§r §lstring!"
 		self.json_frame.columnconfigure(0, weight=1, minsize=300)
+		self.json_frame.bind_all("<Control-s>", lambda event: self.save_input())
+		self.json_frame.rowconfigure((1,3), weight=1)
+
+
+		# Input field & Label
 		ttk.Label(self.json_frame, text="Enter formatted Text (try to avoid gray):").grid(row=0, column=0, sticky=W, pady=4, padx=4)
 		self.text_field = Text(self.json_frame, font=("Minecraft Regular", 16), height=6, width=30, wrap=WORD)
 		self.text_field.insert(1.0, self.user_input)
 		self.text_field.grid(row=1, column=0, padx=(4,0), sticky="nesw")
-		self.text_field.bind("<KeyRelease>", self.UpdateHtml)
+		self.text_field.bind("<KeyRelease>", self.UpdatePreview)
 		self.text_scrollbar = ttk.Scrollbar(self.json_frame, orient=VERTICAL, command=self.text_field.yview)
-		self.text_scrollbar.grid(row=1,column=1,sticky=N+S+W, padx=(0,4))
+		self.text_scrollbar.grid(row=1, column=1, sticky=N+S+W, padx=(0,4))
 		self.text_field["yscrollcommand"] = self.text_scrollbar.set
+
+		# Preview field & Label
 		ttk.Label(self.json_frame, text="Preview Output:").grid(row=2, column=0, sticky=W, pady=4, padx=4)
-		self.json_frame.rowconfigure((1,3), weight=1)
+		
 		self.prev_field = Text(self.json_frame, font=("Minecraft Regular", 16), height=6, width=30, wrap=WORD, foreground="#fff", background="#AEAEAE")
 		self.prev_field.grid(row=3, column=0, padx=(4,0), sticky="nesw")
 		self.prev_field.bind('<Key>', lambda event: "break")
@@ -184,44 +194,64 @@ class JSON_text_Generator(object):
 		self.prev_scrollbar.grid(row=3, column=1, sticky=N+S+W, padx=(0,4))
 		self.prev_field["yscrollcommand"] = self.prev_scrollbar.set
 		
-		self.UpdateHtml("")
+		self.UpdatePreview("event_dummy")
 
+
+		# infographic
 		self.formatting_info = Frame(self.json_frame, bg="#a2a9b1")
 		self.formatting_info.grid(row=0, column=2, padx=4, rowspan=4, sticky=N, pady=(4,0))
-		ttk.Label(self.formatting_info, font=("Minecraft Regular", 9), text="Code").grid(row=0, column=0, sticky=W+E, pady=1, padx=1)
-		ttk.Label(self.formatting_info, font=("Minecraft Regular", 9), text="Name", anchor="c").grid(row=0, column=1, sticky=W+E, pady=1, padx=(0,1))
+		self.formatting_info.bind_all("<ButtonRelease>", self.UpdatePreview)
+		ttk.Label(self.formatting_info, font=("Minecraft Regular", 9), text="Code", anchor="c").grid(row=0, column=0, sticky=W+E, pady=1, ipady=3, padx=1)
+		ttk.Label(self.formatting_info, font=("Minecraft Regular", 9), text="Name", anchor="c").grid(row=0, column=1, sticky=W+E, pady=1, ipady=3, padx=(0,1))
 
-		forminfo_values = 1
-		for key in list(formatting_codes.keys()):
-			if forminfo_values <= 15:
-				if forminfo_values in (1,2,3,4,5,6,9,10):
-					ttk.Label(self.formatting_info, text=key, anchor="c", font=("Minecraft Regular", 9), foreground="#fff",background=formatting_codes[key][23:30]).grid(row=forminfo_values, column=0, sticky=W+E, pady=(0,1), padx=1)
-				else:
-					ttk.Label(self.formatting_info, text=key, anchor="c", font=("Minecraft Regular", 9), background=formatting_codes[key][23:30]).grid(row=forminfo_values, column=0, sticky=W+E, pady=(0,1), padx=1)
-			elif forminfo_values <= 21:
-				ttk.Label(self.formatting_info, anchor="c", background="white", font=("Minecraft Regular", 9), text=key).grid(row=forminfo_values, column=0, sticky=W+E, pady=(0,1), padx=1)
-			forminfo_values += 1
-		ttk.Label(self.formatting_info, background="white", anchor="c", font=("Minecraft Regular", 9), text="§r").grid(row=22, column=0, sticky=W+E, pady=(0,1), padx=1)
-		ttk.Label(self.formatting_info, background="white", anchor="c", font=("Minecraft Regular", 9), text="\\n").grid(row=23, column=0, sticky=W+E, pady=(0,1), padx=1)
+
+		Button(self.formatting_info, text="§0", font=("Minecraft Regular", 9), foreground="#fff", background="#000", command=lambda: self.text_field.insert(INSERT, "§0")).grid(row=1, column=0, sticky=W+E, pady=(0,1), padx=1)
+		Button(self.formatting_info, text="§1", font=("Minecraft Regular", 9), foreground="#fff", background="#00a", command=lambda: self.text_field.insert(INSERT, "§1")).grid(row=2, column=0, sticky=W+E, pady=(0,1), padx=1)
+		Button(self.formatting_info, text="§2", font=("Minecraft Regular", 9), foreground="#fff", background="#0a0", command=lambda: self.text_field.insert(INSERT, "§2")).grid(row=3, column=0, sticky=W+E, pady=(0,1), padx=1)
+		Button(self.formatting_info, text="§3", font=("Minecraft Regular", 9), foreground="#fff", background="#0aa", command=lambda: self.text_field.insert(INSERT, "§3")).grid(row=4, column=0, sticky=W+E, pady=(0,1), padx=1)
+		Button(self.formatting_info, text="§4", font=("Minecraft Regular", 9), foreground="#fff", background="#a00", command=lambda: self.text_field.insert(INSERT, "§4")).grid(row=5, column=0, sticky=W+E, pady=(0,1), padx=1)
+		Button(self.formatting_info, text="§5", font=("Minecraft Regular", 9), foreground="#fff", background="#a0a", command=lambda: self.text_field.insert(INSERT, "§5")).grid(row=6, column=0, sticky=W+E, pady=(0,1), padx=1)
+		Button(self.formatting_info, text="§6", font=("Minecraft Regular", 9), foreground="#000", background="#fa0", command=lambda: self.text_field.insert(INSERT, "§6")).grid(row=7, column=0, sticky=W+E, pady=(0,1), padx=1)
+		Button(self.formatting_info, text="§7", font=("Minecraft Regular", 9), foreground="#000", background="#aaa", command=lambda: self.text_field.insert(INSERT, "§7")).grid(row=8, column=0, sticky=W+E, pady=(0,1), padx=1)
+		Button(self.formatting_info, text="§8", font=("Minecraft Regular", 9), foreground="#fff", background="#555", command=lambda: self.text_field.insert(INSERT, "§8")).grid(row=9, column=0, sticky=W+E, pady=(0,1), padx=1)
+		Button(self.formatting_info, text="§9", font=("Minecraft Regular", 9), foreground="#fff", background="#55f", command=lambda: self.text_field.insert(INSERT, "§9")).grid(row=10, column=0, sticky=W+E, pady=(0,1), padx=1)
+		Button(self.formatting_info, text="§a", font=("Minecraft Regular", 9), foreground="#000", background="#5f5", command=lambda: self.text_field.insert(INSERT, "§a")).grid(row=11, column=0, sticky=W+E, pady=(0,1), padx=1)
+		Button(self.formatting_info, text="§b", font=("Minecraft Regular", 9), foreground="#000", background="#5ff", command=lambda: self.text_field.insert(INSERT, "§b")).grid(row=12, column=0, sticky=W+E, pady=(0,1), padx=1)
+		Button(self.formatting_info, text="§c", font=("Minecraft Regular", 9), foreground="#000", background="#f55", command=lambda: self.text_field.insert(INSERT, "§c")).grid(row=13, column=0, sticky=W+E, pady=(0,1), padx=1)
+		Button(self.formatting_info, text="§d", font=("Minecraft Regular", 9), foreground="#000", background="#f5f", command=lambda: self.text_field.insert(INSERT, "§d")).grid(row=14, column=0, sticky=W+E, pady=(0,1), padx=1)
+		Button(self.formatting_info, text="§e", font=("Minecraft Regular", 9), foreground="#000", background="#ff5", command=lambda: self.text_field.insert(INSERT, "§e")).grid(row=15, column=0, sticky=W+E, pady=(0,1), padx=1)
+		Button(self.formatting_info, text="§f", font=("Minecraft Regular", 9), foreground="#000", background="#fff", command=lambda: self.text_field.insert(INSERT, "§f")).grid(row=16, column=0, sticky=W+E, pady=(0,1), padx=1)
+		Button(self.formatting_info, text="§k", font=("Minecraft Regular", 9), foreground="#000", background="#fff", command=lambda: self.text_field.insert(INSERT, "§k")).grid(row=17, column=0, sticky=W+E, pady=(0,1), padx=1)
+		Button(self.formatting_info, text="§l", font=("Minecraft Regular", 9), foreground="#000", background="#fff", command=lambda: self.text_field.insert(INSERT, "§l")).grid(row=18, column=0, sticky=W+E, pady=(0,1), padx=1)
+		Button(self.formatting_info, text="§m", font=("Minecraft Regular", 9), foreground="#000", background="#fff", command=lambda: self.text_field.insert(INSERT, "§m")).grid(row=19, column=0, sticky=W+E, pady=(0,1), padx=1)
+		Button(self.formatting_info, text="§n", font=("Minecraft Regular", 9), foreground="#000", background="#fff", command=lambda: self.text_field.insert(INSERT, "§n")).grid(row=20, column=0, sticky=W+E, pady=(0,1), padx=1)
+		Button(self.formatting_info, text="§o", font=("Minecraft Regular", 9), foreground="#000", background="#fff", command=lambda: self.text_field.insert(INSERT, "§o")).grid(row=21, column=0, sticky=W+E, pady=(0,1), padx=1)
+		Button(self.formatting_info, text="§r", font=("Minecraft Regular", 9), foreground="#000", background="#fff", command=lambda: self.text_field.insert(INSERT, "§r")).grid(row=22, column=0, sticky=W+E, pady=(0,1), padx=1)
+		Button(self.formatting_info, text="\\n", font=("Minecraft Regular", 9), foreground="#000", background="#fff", command=lambda: self.text_field.insert(INSERT, "\\n")).grid(row=23, column=0, sticky=W+E, pady=(0,1), padx=1)
+		
 		for i in range(0, 23):
 			if i <= 14:
 				if i in (0,1,2,3,4,5,8,9):
-					ttk.Label(self.formatting_info, text=formatting_names[i], font=("Minecraft Regular", 9), anchor="c", foreground="#fff",background=list(formatting_codes.values())[i][23:30]).grid(row=i+1, column=1, sticky=W+E, pady=(0,1), padx=(0,1))
+					ttk.Label(self.formatting_info, text=formatting_names[i], font=("Minecraft Regular", 9), anchor="c", foreground="#fff",background=list(formatting_codes.values())[i][23:30]).grid(row=i+1, column=1, sticky=W+E+N+S, pady=(1,2), padx=(0,3))
 				else:
-					ttk.Label(self.formatting_info, text=formatting_names[i], font=("Minecraft Regular", 9), anchor="c", background=list(formatting_codes.values())[i][23:30]).grid(row=i+1, column=1, sticky=W+E, pady=(0,1), padx=(0,1))
+					ttk.Label(self.formatting_info, text=formatting_names[i], font=("Minecraft Regular", 9), anchor="c", background=list(formatting_codes.values())[i][23:30]).grid(row=i+1, column=1, sticky=W+E+N+S, pady=(1,2), padx=(0,3))
 			elif i in (15,21,22):
-				ttk.Label(self.formatting_info, anchor="c", background="white", font=("Minecraft Regular", 9), text=formatting_names[i]).grid(row=i+1, column=1, sticky=W+E, pady=(0,1), padx=(0,1))
+				ttk.Label(self.formatting_info, anchor="c", background="white", font=("Minecraft Regular", 9), text=formatting_names[i]).grid(row=i+1, column=1, sticky=W+E+N+S, pady=(1,2), padx=(0,3))
 
 		self.obfuscated_text = StringVar(value="obfuscated")
 		self.obfuscated_example = ttk.Label(self.formatting_info, background="white", anchor="c", font=("Minecraft Regular", 9), width=10, textvariable=self.obfuscated_text, foreground="#000")
-		self.obfuscated_example.grid(row=17, column=1, sticky=W+E, pady=(0,1), padx=(0,1))
+		self.obfuscated_example.grid(row=17, column=1, sticky=W+E+N+S, pady=(1,2), padx=(0,3))
 
-		ttk.Label(self.formatting_info, background="white", anchor="c", font=("Minecraft Regular", 9, "bold"), text=formatting_names[17], foreground="#000").grid(row=18, column=1, sticky=W+E, pady=(0,1), padx=(0,1))
-		ttk.Label(self.formatting_info, background="white", anchor="c", font=("Minecraft Regular", 9, "overstrike"), text=formatting_names[18], foreground="#000").grid(row=19, column=1, sticky=W+E, pady=(0,1), padx=(0,1))
-		ttk.Label(self.formatting_info, background="white", anchor="c", font=("Minecraft Regular", 9, "underline"), text=formatting_names[19], foreground="#000").grid(row=20, column=1, sticky=W+E, pady=(0,1), padx=(0,1))
-		ttk.Label(self.formatting_info, background="white", anchor="c", font=("Minecraft Regular", 9, "italic"), text=formatting_names[20], foreground="#000").grid(row=21, column=1, sticky=W+E, pady=(0,1), padx=(0,1))
+		ttk.Label(self.formatting_info, background="white", anchor="c", font=("Minecraft Regular", 9, "bold"), text=formatting_names[17], foreground="#000").grid(row=18, column=1, sticky=W+E+N+S, pady=(1,2), padx=(0,3))
+		ttk.Label(self.formatting_info, background="white", anchor="c", font=("Minecraft Regular", 9, "overstrike"), text=formatting_names[18], foreground="#000").grid(row=19, column=1, sticky=W+E+N+S, pady=(1,2), padx=(0,3))
+		ttk.Label(self.formatting_info, background="white", anchor="c", font=("Minecraft Regular", 9, "underline"), text=formatting_names[19], foreground="#000").grid(row=20, column=1, sticky=W+E+N+S, pady=(1,2), padx=(0,3))
+		ttk.Label(self.formatting_info, background="white", anchor="c", font=("Minecraft Regular", 9, "italic"), text=formatting_names[20], foreground="#000").grid(row=21, column=1, sticky=W+E+N+S, pady=(1,2), padx=(0,3))
 
-		ttk.Button(self.json_frame, text="Save", command=self.save_input).grid(row=4, column=3, padx=4, pady=4)
+		ttk.Button(self.json_frame, text="Save", command=self.save_input).grid(row=4, column=2, padx=4, pady=4, sticky=E)
+
+		if not __name__ == "__main__":
+			self.json_frame.wait_window()
+		return self.user_input
 
 	def close_event(self):
 		dialogue = Toplevel(self.json_frame)
@@ -246,17 +276,11 @@ class JSON_text_Generator(object):
 		
 
 	def save_input(self):
-		self.user_input = self.text_field.get(1.0,END)[:-1].replace("\n", "\\n").replace("§", """\\u00A7""")
-		self.user_input = self.user_input.rstrip("\\n")
-		print(self.user_input)
+		self.user_input = self.text_field.get(1.0,END)[:-1].replace("\n", "\\n").rstrip("\\n")
 		if __name__=="__main__":
 			root.destroy()
 		else:
 			self.json_frame.destroy()
-
-	def encode_string(self):
-		self.output_string = "".join(["\\u0000"[0:6-len(str(ord(char)))] + str(ord(char)) if not char in """ABCDEFGHJKLMNOPQRSTUVWXYZabcdeghjmnopqrsuvwxyz1234567890,.!/()[]{}?\+*"'#-_<>|%=""" else char for char in self.user_input.replace('\"', '\\"').replace("\'", "\\'")])
-		print(self.output_string)
 
 
 	def setup_tag(self, inp_stack):
@@ -283,7 +307,7 @@ class JSON_text_Generator(object):
 			self.prev_field.after(80, self.obfuscated_thread)
 
 
-	def UpdateHtml(self, e):
+	def UpdatePreview(self, e):
 		if self.alive:
 			self.alive = False
 		def mk_pos(index):
@@ -300,7 +324,11 @@ class JSON_text_Generator(object):
 
 		global formatting_keys
 		global formatting_names
-		raw_text = self.text_field.get(1.0,END).replace("\\n", "\n").rstrip("\n")
+		try:
+			raw_text = self.text_field.get(1.0,END).replace("\\n", "\n").rstrip("\n")
+		except:
+			# assume window is gone
+			return
 
 		# stacks
 		if len(raw_text) >= 3:
@@ -324,7 +352,6 @@ class JSON_text_Generator(object):
 					raw_text = raw_text.replace(code, "")
 				raw_text = raw_text.replace("§r", "")
 				stack[len(raw_text)] = []
-
 
 			obfuscated_starts = []
 			obfuscated_ends = []
@@ -362,6 +389,6 @@ if __name__ == "__main__":
 	root.minsize(800, root.winfo_height())
 	mcfont = font.Font(name="mc font", family="mc font", font=("Minecraft Regular", 16))
 
-	app = JSON_text_Generator("String")
+	app = JSON_text_Generator(root, "String")
 
 	mainloop()
