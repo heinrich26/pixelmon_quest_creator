@@ -7,6 +7,7 @@ import string
 
 # import tkinter stuff
 from tkinter import *
+import tkinter as tk
 from tkinter import ttk
 from tkinter import filedialog
 from tkinter import messagebox
@@ -24,6 +25,7 @@ from json_text_generator import JSON_text_Generator
 
 stages = []
 strings = []
+inserters = []
 final = {}
 minimized = False
 
@@ -61,7 +63,9 @@ objective_names = [
 	"SERVER_TIME",
 	"STRUCTURE",
 	"TILEENTITY_VICINITY",
-	"WORLD_TIME"
+	"WORLD_TIME",
+	"NPC_Inserter",
+	"POKEMON_Inserter"
 ]
 objective_data_req = [
 	"<x1> <z1> <x2> <z2> <dimension>",
@@ -94,6 +98,8 @@ objective_data_req = [
 	"<Weight>:<ActionA> <Weight>:<ActionB>",
 	"<time>",
 	"<structure name>",
+	[],
+	[],
 	[],
 	[]
 ]
@@ -136,6 +142,8 @@ objective_data_opt = [
 	"[range]",
 	[],
 	[],
+	[],
+	[],
 	[]
 ]
 
@@ -153,11 +161,11 @@ def center_window(window):
 	window.update()
 	windowWidth, windowHeight = window.geometry().split("+")[0].split("x")
 	print("Width",windowWidth,"Height",windowHeight)
-	
+
 	# Gets both half the screen width/height and window width/height
 	positionRight = int(root.winfo_screenwidth()/2 - int(windowWidth)/2)
 	positionDown = int(root.winfo_screenheight()/2 - int(windowHeight)/2)
-	
+
 	# Positions the window in the center of the page.
 	window.geometry("+{}+{}".format(positionRight, positionDown))
 	window.wm_attributes("-alpha", 1.0)
@@ -231,7 +239,6 @@ class StringObj(object):
 		output_list = [str("\\u0000"[0:6-len(str(ord(char)))] + str(ord(char))) if not char in allowed_chars else char for char in self.string_text.replace('\"', '\\"').replace("\'", "\\'")]
 		output = "".join(output_list)
 		return output
-		
 
 
 class Arrowed_Tooltip(object):
@@ -379,10 +386,11 @@ class Stage:
 	def new_objective(self):
 		this_w = 650
 		this_h = 200
-		self.edit_window = Toplevel(self.objectives_box)
+		self.edit_window = Toplevel(root)
+		self.edit_window.transient(root)
 		self.edit_window.grab_set()
 		self.edit_window.title("Choose Objective Type:")
-		self.edit_window.geometry('%dx%d+%d+%d' % (this_w, this_h, int(max(master.winfo_x()+(master.winfo_width()-this_w)/2, 0)), int(max(master.winfo_y()+(master.winfo_height()-this_h)/2, 0))))
+		self.edit_window.geometry("%dx%d+%d+%d" % (this_w, this_h, int(max(root.winfo_x()+(root.winfo_width()-this_w)/2, 0)), int(max(root.winfo_y()+(root.winfo_height()-this_h)/2, 0))))
 		self.edit_window.columnconfigure(0, minsize=178)
 		self.edit_window.columnconfigure((1,2), minsize=150, weight=1)
 		self.edit_window.rowconfigure(2, weight=1)
@@ -417,17 +425,6 @@ class Stage:
 		self.objectives.append(eval(self.var.get())(self))
 		self.objectives[-1].identifier = len(self.objectives)-1
 		self.edit_window.destroy()
-
-
-	def edit_objective(self):
-		this_w = 500
-		this_h = 100
-		self.edit_window = Toplevel(self.parent.objectives_box)
-		self.edit_window.title("Edit Objective: " + self.__class__.__name__)
-		self.edit_window.geometry('%dx%d+%d+%d' % (this_w, this_h, int(max(master.winfo_x()+(master.winfo_width()-this_w)/2, 0)), int(max(master.winfo_y()+(master.winfo_height()-this_h)/2, 0))))
-		ttk.Label(self.edit_window, text=self.__class__.__name__).grid(row=0)
-		ttk.Label(self.edit_window, text="Required Arguments:").grid(row=0, column=1)
-		ttk.Label(self.edit_window, text="Optional Arguments:").grid(row=0, column=2)
 
 	def uuid_input_validator(self, wholeString, widget, newChars, action):
 		strippedString = wholeString.replace('-','',4)
@@ -482,7 +479,7 @@ class Objective(Stage):
 		self.item = StringVar()
 		self.entity = ""
 		self.uuid = StringVar()
-		self.inserter = ""
+		self.inserter = "Select Inserter"
 		self.class_name = ""
 		self.name = ""
 		self.text = ""
@@ -514,10 +511,14 @@ class Objective(Stage):
 		self.delete_button = ttk.Button(self.constructor_box, image=delete, command=self.rm)
 		self.delete_button.grid(row=0, column=1, padx=(2,0), pady=1)
 		self.delete_tooltip = Delete_Tooltip(self.delete_button, text="Delete this objective")
+
+		# validations
+		self.time_validation = self.constructor_box.register(self.time_validation)
 		self.chance_validation = self.constructor_box.register(self.chance_validation)
 		self.uuid_input_validation = self.constructor_box.register(self.uuid_input_validator)
 		self.dex_range_validation = self.constructor_box.register(self.dex_range_validator)
 		self.dex_number_validation = self.constructor_box.register(self.dex_number_validator)
+		self.identifier_validation = self.constructor_box.register(self.identifier_validation)
 
 
 	def rm(self):
@@ -529,19 +530,20 @@ class Objective(Stage):
 		self.parent.objectives.remove(self)
 		del self
 
-	def edit_objective(self, optcol="none", requirements=True):
+	def edit_objective(self, optcol=None, requirements=True):
 		this_w = 600
 		this_h = 160
-		self.edit_window = Toplevel(self.parent.objectives_box)
+		self.edit_window = Toplevel(root)
 		self.edit_window.grab_set()
+		self.edit_window.transient(root)
 		self.edit_window.rowconfigure(1, weight=1)
 		self.edit_window.title("Edit Objective: " + self.__class__.__name__)
 		self.edit_window.geometry("+%d+%d" % (int(max(root.winfo_x()+(root.winfo_width()-this_w)/2, 0)), int(max(root.winfo_y()+(root.winfo_height()-this_h)/2, 0))))
 		self.edit_window.minsize(this_w, this_h)
 		if requirements:
-			ttk.Label(self.edit_window, text="Required Arguments:").grid(row=0, column=0, sticky=W)
-		if optcol != "none":
-			ttk.Label(self.edit_window, text="Optional Arguments:").grid(row=0, column=optcol, sticky=W)
+			ttk.Label(self.edit_window, text="Required Arguments:").grid(row=0, column=0, sticky=W, pady=(2,4))
+		if optcol:
+			ttk.Label(self.edit_window, text="Optional Arguments:").grid(row=0, column=optcol, sticky=W, pady=(2,4))
 		ttk.Button(self.edit_window, command=self.save_objective_changes, text="Save Changes").grid(row=4, column=3, pady=(10,4), padx=4, sticky=E+S)
 		self.edit_window.focus_set()
 		self.edit_window.resizable(False, False)
@@ -710,15 +712,36 @@ class Objective(Stage):
 			except:
 				return False
 
+	def identifier_validation(self, string, widget):
+		if string == "":
+			try:
+				self.identifier_error.hide()
+			except:
+				pass
+			return True
+		valid = string.isidentifier()
+		if not valid:
+			try:
+				self.identifier_error
+			except:
+				self.identifier_error=Arrowed_Tooltip(widget, text="A valid Inserter can only contain Aa-Zz, Numbers and _\'s!\n It cannot start with a Number!")
+			self.identifier_error.show()
+		else:
+			try:
+				self.identifier_error.hide()
+			except:
+				pass
+		return valid
+
 	def inserter_entry(self, column, parent="", columns=1):
 		if parent == "":
 			parent = self.edit_window
 		self.inserter_frame = ttk.Frame(parent)
-		self.inserter_frame.grid(row=1, column=column, columnspan=columns, padx=2, sticky=N+W)
+		self.inserter_frame.columnconfigure(0, minsize=83)
 		if parent == self.edit_window:
-			ttk.Label(self.inserter_frame, text="inserter:", ).grid()
+			ttk.Label(self.inserter_frame, text="Inserter:", ).grid(sticky=W)
 		ttk.Label(self.inserter_frame, text="Syntax: !#<type>,<mode>,<chance>,[range],[times...]\n").grid(row=2, column=0, columnspan=5)
-		ttk.OptionMenu(self.inserter_frame, self.inserter_type, self.inserter_type.get(), *["NPC","Pixelmon"]).grid(row=1, column=0)
+		ttk.OptionMenu(self.inserter_frame, self.inserter_type, self.inserter_type.get(), *["NPC","Pixelmon"]).grid(row=1, column=0, sticky=E+W)
 		ttk.OptionMenu(self.inserter_frame, self.inserter_mode, self.inserter_mode.get(), *["Time","Spawn"]).grid(row=1, column=1)
 		self.inserter_mode.trace("w", self.inserter_mode_swap)
 		self.inserter_chance_entry = ttk.Entry(self.inserter_frame, textvariable=self.inserter_chance, validate='key', validatecommand=(self.chance_validation, "%P", "%W"), width=10)
@@ -728,6 +751,8 @@ class Objective(Stage):
 		self.inserter_times_entry = ttk.Entry(self.inserter_frame, textvariable=self.inserter_times, validate="key", validatecommand=(self.time_validation, "%P"), width=10)
 		self.inserter_times_entry.grid(row=1, column=4)
 		self.inserter_tooltip = CreateToolTip(self.inserter_frame, text="Enter an inserter\nInserters only require to be defined once and can be reused")
+
+		self.inserter_frame.grid(row=1, column=column, columnspan=columns, pady=4, padx=(4,0), sticky=N+W)
 
 	def pokemon_inserter_entry(self, column, parent="", columns=1):
 		global growths
@@ -799,6 +824,32 @@ class Objective(Stage):
 		self.pokemon_inserter_growths_selector.bind("<<ListboxSelect>>", self.set_growths_selection)
 		self.pokemon_inserter_natures_selector.bind("<<ListboxSelect>>", self.set_natures_selection)
 
+	def inserter_selector_entry(self, column, parent="", columns=1):
+		if parent == "":
+			parent = self.edit_window
+		self.inserter_selector_frame = ttk.Frame(parent)
+		if parent == self.edit_window:
+			ttk.Label(self.inserter_selector_frame, text="Inserter:").grid(row=0, column=0, sticky=W)
+		global inserters
+		self.selectable_inserters = [inserter.name for inserter in inserters]
+		self.selected_inserter = StringVar(value=self.inserter.name)
+		self.selected_inserter_old = self.inserter.name
+		self.inserter_selector = ttk.OptionMenu(self.inserter_selector_frame, self.selected_inserter, self.inserter.name, *self.selectable_inserters)
+		self.inserter_selector.grid(row=1, column=0, sticky=E+W)
+		self.inserter_selector["menu"].add_command(label="New Inserter", command=self.create_new_inserter)
+		# self.selected_inserter.trace("w", self.create_new_inserter)
+
+		self.inserter_selector_frame.grid(row=1, column=column, columnspan=columns, pady=4, padx=(4,0), sticky=N+W)
+
+	def create_new_inserter(self, *args):
+		# if self.selected_inserter.get() != self.selected_inserter_old and self.selected_inserter.get() == "New Inserter":
+		self.parent.objectives.append(NPC_Inserter(self.parent, self))
+		self.parent.objectives[-1].identifier = len(self.parent.objectives)
+		self.parent.objectives[-1].edit_objective()
+		#self.selected_inserter_old = self.selected_inserter.get()
+
+
+
 	def count_entry(self, column, parent="", columns=1):
 		if parent == "":
 			parent = self.edit_window
@@ -818,6 +869,7 @@ class Objective(Stage):
 				self.inserter_range_entry.grid_forget()
 				self.inserter_times_entry.grid_forget()
 			self.inserter_mode_old = self.inserter_mode.get()
+			print(self.inserter_frame.winfo_width())
 
 	def pokemon_inserter_mode_swap(self, *args):
 		if not self.pokemon_inserter_mode.get() == self.pokemon_inserter_mode_old:
@@ -917,6 +969,49 @@ class Objective(Stage):
 		string = self.__class__.__name__
 		return string
 
+	def identifier_entry(self, column, parent="", columns=1):
+		if parent == "":
+			parent = self.edit_window
+		self.identifier_frame = ttk.Frame(parent)
+		ttk.Label(self.identifier_frame, text="Identifier:").grid(row=0, column=0, sticky=W)
+		self.identifier_input_field = ttk.Entry(self.identifier_frame, width=16, validate="key", validatecommand=(self.identifier_validation, "%P", "%W"))
+		if self.name != "unknown_inserter":
+			self.identifier_input_field.insert(0, self.name)
+		self.identifier_input_field.grid(row=1, column=0, sticky=W+E)
+
+		self.identifier_frame.grid(row=1, column=column, columnspan=columns, pady=4, padx=(4,0), sticky=N+W)
+
+class NPC_Inserter(Objective):
+	def __init__(self, parent, creator=None):
+		global identifiers
+		super().__init__(parent)
+		self.name = "unknown_inserter"
+		self.inserter_type = StringVar(value="NPC")
+		self.inserter_mode = StringVar(value="Time")
+		self.inserter_mode_old = "Time"
+		self.inserter_chance = DoubleVar(value=0.5)
+		self.inserter_range = IntVar(value=0)
+		self.inserter_times = StringVar(value="0")
+		self.creator = creator
+		inserters.append(self)
+
+	def edit_objective(self):
+		super().edit_objective(requirements=False)
+		self.edit_window.title("Edit Inserter: " + self.name)
+		self.identifier_entry(0)
+		self.inserter_entry(1)
+
+	def save_objective_changes(self):
+		identifier = self.identifier_input_field.get()
+		if identifier != "":
+			self.name = identifier
+			if self.creator:
+				self.creator.inserter_selector["menu"].add_command(label=self.name, command=tk._setit(self.creator.selected_inserter, self.name))
+				self.creator.selected_inserter.set(self.name)
+			super().save_objective_changes()
+		else:
+			messagebox.showerror(title="Missing Input", message="Please enter an Identifier\nfor your Inserter!")
+
 
 class BLOCKER(Objective):
 	def __init__(self, parent):
@@ -946,10 +1041,14 @@ class DIALOGUE(Objective):
 		self.inserter_times = StringVar(value="0")
 		self.switch_var = StringVar(value="first")
 		self.switch_var_old = "first"
-		self.time_validation = self.constructor_box.register(self.time_validation)
 
 	def save_objective_changes(self):
 		print("hello there")
+		if self.selected_inserter.get() != "Select Inserter":
+			for inserter in inserters:
+				if inserter.name == self.selected_inserter.get():
+					self.inserter == inserter
+					break
 		super().save_objective_changes()
 
 	def makestr(self):
@@ -975,7 +1074,7 @@ class DIALOGUE(Objective):
 	def edit_objective(self):
 		super().edit_objective(optcol=1)
 		self.item_entry(1)
-		self.one_out_two_entrys(0, "Inserter", "UUID")
+		self.one_out_two_entrys(0, "Inserter_Selector", "UUID")
 
 class POKEMON_CAPTURE(Objective):
 	def __init__(self, parent):
@@ -1133,6 +1232,8 @@ style.configure("Red.TEntry",
 	foreground="white",
 	fieldbackground="orange red")
 
+
+
 master = ttk.Frame(root, pad=(4,4))
 master.columnconfigure(1,weight=1, minsize=100)
 master.columnconfigure(0,weight=0, minsize=40)
@@ -1142,7 +1243,7 @@ master.pack(fill=BOTH, expand=1)
 int_validation = root.register(only_numbers)
 natural_num_validation = root.register(only_natural_numbers)
 
-#stage_box & scrollbar stuff
+# stage_box & scrollbar stuff
 stage_frame = VerticalScrolledFrame(master, width=290, height=120, borderwidth=1, relief="sunken")
 stage_frame.grid(row=6, column=0, columnspan=2, sticky=E+N+S+W, padx=(40,0), pady=4)
 stage_frame.interior.columnconfigure(0,weight=1)

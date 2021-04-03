@@ -24,8 +24,8 @@ class CreateToolTip(object):
     def enter(self, event=None):
         x = y = 0
         x, y, cx, cy = self.widget.bbox("insert")
-        x += self.widget.winfo_rootx() + 25
-        y += self.widget.winfo_rooty() + 20
+        x += self.widget.winfo_rootx() + round(self.widget.winfo_width()/3)
+        y += self.widget.winfo_rooty() + max(self.widget.winfo_height() - 4, 0)
         # creates a toplevel window
         self.tw = tk.Toplevel(self.widget)
         # Leaves only the label and removes the app window
