@@ -149,6 +149,18 @@ types = ["Normal","Fire","Fighting","Water","Flying","Grass","Poison","Electric"
 
 
 
+def center_window(window):
+	window.update()
+	windowWidth, windowHeight = window.geometry().split("+")[0].split("x")
+	print("Width",windowWidth,"Height",windowHeight)
+	
+	# Gets both half the screen width/height and window width/height
+	positionRight = int(root.winfo_screenwidth()/2 - int(windowWidth)/2)
+	positionDown = int(root.winfo_screenheight()/2 - int(windowHeight)/2)
+	
+	# Positions the window in the center of the page.
+	window.geometry("+{}+{}".format(positionRight, positionDown))
+	window.wm_attributes("-alpha", 1.0)
 
 
 def new_stage(stage_id):
@@ -1083,6 +1095,7 @@ def write_stage_data():
 
 
 root = Tk()
+root.wm_attributes("-alpha", 0.0)
 root.event_add("<<Minimize_Configure>>", "<Configure>")
 root.title("AdvancedQuesting - Pixelmon Quest Creator")
 # root.geometry("354x500")
@@ -1176,4 +1189,7 @@ ttk.Button(bottom_frame, text="BBox", command=lambda:print(sizes())).grid(column
 minimizeButton = ttk.Button(bottom_frame, text='Show', command=lambda: minimize())
 minimizeButton.grid(row=0, column=2, sticky=S)
 
-mainloop()
+center_window(root)
+
+
+root.mainloop()

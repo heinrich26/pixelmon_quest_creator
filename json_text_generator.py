@@ -3,7 +3,11 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import font
 from tkinter.font import Font
-from tkinter import messagebox
+from tkinter import messagebox  
+import sys
+import trace
+import threading
+import time
 import random
 import pyglet
 
@@ -85,7 +89,9 @@ formats = {
 	"bold": "bold",
 	"italic": "italic",
 	"obfuscated": ""
-}
+}	
+
+
 
 def rm_unused(tuple):
 	new_tuple = tuple.copy()
@@ -109,6 +115,37 @@ alphabet = [
 """kf(){}*¤²”\"""", # 4px
 """ABCDEFGHJKLMNOPQRSTUVWXYZabcdeghjmnopqrsuvwxyz/?$%&+-#_¯=^¨£ÀÁÂÃÄÅÇÈÉÊËÑÒÓÔÕÖÙÚÛÜÝàáâãäåçèéêëñðòóôõöùúûüýÿ0123456789Ææß×¼½¿¬«»""", # 5px
 "~@®÷±"]
+
+class Safe_Thread(threading.Thread):
+  def __init__(self, *args, **keywords):
+    threading.Thread.__init__(self, *args, **keywords)
+    self.killed = False
+  
+  def start(self):
+    self.__run_backup = self.run
+    self.run = self.__run      
+    threading.Thread.start(self)
+  
+  def __run(self):
+    sys.settrace(self.globaltrace)
+    self.__run_backup()
+    self.run = self.__run_backup
+  
+  def globaltrace(self, frame, event, arg):
+    if event == 'call':
+      return self.localtrace
+    else:
+      return None
+  
+  def localtrace(self, frame, event, arg):
+    if self.killed:
+      if event == 'line':
+        raise SystemExit()
+    return self.localtrace
+  
+  def kill(self):
+    self.killed = True
+
 
 class animate_obfuscated_text(object):
 	def __init__(self, text, starts, ends):
@@ -146,27 +183,27 @@ class animate_obfuscated_text(object):
 
 	# def refresh(self):
 	#     self.var.set("".join([self.randchar(char) for char in self.text]))
-	#     self.parent.after(100, self.refresh)
+	#     self.self.after(100, self.refresh)
 
 
 class JSON_text_Generator(object):
 	def __init__(self, master, string_name):
 		self.string_name = string_name
 		self.user_input = "This is a §6formatted§r §lstring!"
-		self.parent = master
+		self.self = master
 		self.edit_string()
 
 	def edit_string(self):
-		self.alive = False
+		self.is_alive = False
 		if __name__ == "__main__":
 			self.json_frame = ttk.Frame(root)
 			self.json_frame.pack(fill=BOTH, expand=1)
 			root.protocol("WM_DELETE_WINDOW", self.close_event)
 		else:
-			self.json_frame = Toplevel(self.parent)
+			self.json_frame = Toplevel(self.self)
 			self.json_frame.title("Configure JSON Text")
 			self.json_frame.grab_set()
-			self.json_frame.transient(self.parent)
+			self.json_frame.transient(self.self)
 			self.json_frame.minsize(800, self.json_frame.winfo_height())
 			self.json_frame.protocol("WM_DELETE_WINDOW", self.close_event)
 		self.json_frame.columnconfigure(0, weight=1, minsize=300)
@@ -298,19 +335,24 @@ class JSON_text_Generator(object):
 		return args
 
 
-	def obfuscated_thread(self):
-		self.prev_field.delete(1.0,END)
-		self.prev_field.insert(1.0, self.animated_text.next())
-		for i in self.tags.keys():
-			self.prev_field.tag_add(i, *self.tag_ranges[i])
-			self.prev_field.tag_config(i, **self.tags[i])
-		if self.alive:
-			self.prev_field.after(80, self.obfuscated_thread)
+	def obfuscated_thread(self, current_text):
+		self.is_alive = True
+		while current_text == self.text_field.get(1.0, END) and self.is_alive:
+			self.prev_field.delete(1.0, END)
+			self.prev_field.insert(1.0, self.animated_text.next())
+			for i in self.tags.keys():
+				self.prev_field.tag_add(i, *self.tag_ranges[i])
+				self.prev_field.tag_config(i, **self.tags[i])
+			time.sleep(0.15)
 
 
 	def UpdatePreview(self, event):
-		if self.alive:
-			self.alive = False
+		self.is_alive = False
+		try:
+			self.prev_update_thread.kill()
+			self.prev_update_thread.join()
+		except:
+			pass
 		def mk_pos(index):
 			if "\n" in raw_text[0:index]:
 				new_index = str(index - raw_text.rfind("\n", 0, index)-1)
@@ -326,9 +368,9 @@ class JSON_text_Generator(object):
 		global formatting_keys
 		global formatting_names
 		try:
-			raw_text = self.text_field.get(1.0,END).replace("\\n", "\n").replace("&r", "§r").rstrip("\n")
-			for key in formatting_keys:
-				raw_text = raw_text.replace("&" + key[1], key)
+			raw_text = self.text_field.get(1.0,END).replace("\\n", "\n").rstrip("\n")
+			for key in "0123456789abcdefklmnor":
+				raw_text = raw_text.replace("&" + key, "§" + key)
 		except:
 			# assume window is gone
 			return
@@ -375,13 +417,13 @@ class JSON_text_Generator(object):
 
 
 			if obfuscated_starts != []:
-				self.alive = True
 				self.animated_text = animate_obfuscated_text(raw_text, obfuscated_starts, obfuscated_ends)
 				self.tags = {i:self.setup_tag(stack[stack_keys[i]]) for i in range(0,len(stack_keys)) if stack[stack_keys[i]]}
 				self.tag_ranges = {i:(mk_pos(stack_keys[i]), mk_pos(stack_keys[i+1])) for i in range(0,len(stack_keys)) if stack[stack_keys[i]]}
-				self.prev_field.after(1,self.obfuscated_thread)
+				self.prev_update_thread = Safe_Thread(target=self.obfuscated_thread, args=(self.text_field.get(1.0, END),))
+				self.prev_update_thread.start()
 		else:
-			self.prev_field.delete(1.0,END)
+			self.prev_field.delete(1.0, END)
 			self.prev_field.insert(1.0, raw_text)
 
 
