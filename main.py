@@ -7,10 +7,7 @@ import string
 
 # import tkinter stuff
 from tkinter import *
-import tkinter as tk
-from tkinter import ttk
-from tkinter import filedialog
-from tkinter import messagebox
+from tkinter import ttk, filedialog, messagebox, _setit
 from scrolled_frame import VerticalScrolledFrame
 try:
 	from PIL import Image, ImageTk
@@ -832,9 +829,12 @@ class Objective(Stage):
 			ttk.Label(self.inserter_selector_frame, text="Inserter:").grid(row=0, column=0, sticky=W)
 		global inserters
 		self.selectable_inserters = [inserter.name for inserter in inserters]
-		self.selected_inserter = StringVar(value=self.inserter.name)
-		self.selected_inserter_old = self.inserter.name
-		self.inserter_selector = ttk.OptionMenu(self.inserter_selector_frame, self.selected_inserter, self.inserter.name, *self.selectable_inserters)
+		if type(self.inserter) == str:
+			self.selected_inserter = StringVar(value=self.inserter)
+		else:
+			self.selected_inserter = StringVar(value=self.inserter.name)
+		self.selected_inserter_old = self.selected_inserter.get()
+		self.inserter_selector = ttk.OptionMenu(self.inserter_selector_frame, self.selected_inserter, self.selected_inserter.get(), *self.selectable_inserters)
 		self.inserter_selector.grid(row=1, column=0, sticky=E+W)
 		self.inserter_selector["menu"].add_command(label="New Inserter", command=self.create_new_inserter)
 		# self.selected_inserter.trace("w", self.create_new_inserter)
@@ -843,11 +843,10 @@ class Objective(Stage):
 
 	def create_new_inserter(self, *args):
 		# if self.selected_inserter.get() != self.selected_inserter_old and self.selected_inserter.get() == "New Inserter":
-		self.parent.objectives.append(NPC_Inserter(self.parent, self))
+		self.parent.objectives.append(NPC_Inserter(self.parent))
 		self.parent.objectives[-1].identifier = len(self.parent.objectives)
-		self.parent.objectives[-1].edit_objective()
+		self.parent.objectives[-1].edit_objective(creator=self)
 		#self.selected_inserter_old = self.selected_inserter.get()
-
 
 
 	def count_entry(self, column, parent="", columns=1):
@@ -982,7 +981,7 @@ class Objective(Stage):
 		self.identifier_frame.grid(row=1, column=column, columnspan=columns, pady=4, padx=(4,0), sticky=N+W)
 
 class NPC_Inserter(Objective):
-	def __init__(self, parent, creator=None):
+	def __init__(self, parent):
 		global identifiers
 		super().__init__(parent)
 		self.name = "unknown_inserter"
@@ -992,10 +991,10 @@ class NPC_Inserter(Objective):
 		self.inserter_chance = DoubleVar(value=0.5)
 		self.inserter_range = IntVar(value=0)
 		self.inserter_times = StringVar(value="0")
-		self.creator = creator
 		inserters.append(self)
 
-	def edit_objective(self):
+	def edit_objective(self, creator=None):
+		self.creator = creator
 		super().edit_objective(requirements=False)
 		self.edit_window.title("Edit Inserter: " + self.name)
 		self.identifier_entry(0)
@@ -1006,7 +1005,7 @@ class NPC_Inserter(Objective):
 		if identifier != "":
 			self.name = identifier
 			if self.creator:
-				self.creator.inserter_selector["menu"].add_command(label=self.name, command=tk._setit(self.creator.selected_inserter, self.name))
+				self.creator.inserter_selector["menu"].add_command(label=self.name, command=_setit(self.creator.selected_inserter, self.name))
 				self.creator.selected_inserter.set(self.name)
 			super().save_objective_changes()
 		else:
@@ -1043,11 +1042,12 @@ class DIALOGUE(Objective):
 		self.switch_var_old = "first"
 
 	def save_objective_changes(self):
+		global inserters
 		print("hello there")
 		if self.selected_inserter.get() != "Select Inserter":
 			for inserter in inserters:
 				if inserter.name == self.selected_inserter.get():
-					self.inserter == inserter
+					self.inserter = inserter
 					break
 		super().save_objective_changes()
 
