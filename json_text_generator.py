@@ -3,7 +3,7 @@ from tkinter import *
 from tkinter import ttk
 from tkinter import font
 from tkinter.font import Font
-from tkinter import messagebox  
+from tkinter import messagebox
 import sys
 import trace
 import threading
@@ -14,7 +14,6 @@ import pyglet
 current_os = platform.system()
 
 if current_os == "Windows" or current_os == "Darwin":
-	pyglet.font.add_file("src/fonts/unifont-13.0.06.ttf")
 	pyglet.font.add_file("src/fonts/minecraft_font.ttf")
 
 formatting_codes = {
@@ -89,7 +88,7 @@ formats = {
 	"bold": "bold",
 	"italic": "italic",
 	"obfuscated": ""
-}	
+}
 
 
 
@@ -120,29 +119,29 @@ class Safe_Thread(threading.Thread):
   def __init__(self, *args, **keywords):
     threading.Thread.__init__(self, *args, **keywords)
     self.killed = False
-  
+
   def start(self):
     self.__run_backup = self.run
-    self.run = self.__run      
+    self.run = self.__run
     threading.Thread.start(self)
-  
+
   def __run(self):
     sys.settrace(self.globaltrace)
     self.__run_backup()
     self.run = self.__run_backup
-  
+
   def globaltrace(self, frame, event, arg):
     if event == 'call':
       return self.localtrace
     else:
       return None
-  
+
   def localtrace(self, frame, event, arg):
     if self.killed:
       if event == 'line':
         raise SystemExit()
     return self.localtrace
-  
+
   def kill(self):
     self.killed = True
 
@@ -224,14 +223,14 @@ class JSON_text_Generator(object):
 
 		# Preview field & Label
 		ttk.Label(self.json_frame, text="Preview Output:").grid(row=2, column=0, sticky=W, pady=4, padx=4)
-		
+
 		self.prev_field = Text(self.json_frame, font=("Minecraft Regular", 16), height=6, width=30, wrap=WORD, foreground="#fff", background="#AEAEAE")
 		self.prev_field.grid(row=3, column=0, padx=(4,0), sticky="nesw")
 		self.prev_field.bind('<Key>', lambda event: "break")
 		self.prev_scrollbar = ttk.Scrollbar(self.json_frame, orient=VERTICAL, command=self.prev_field.yview)
 		self.prev_scrollbar.grid(row=3, column=1, sticky=N+S+W, padx=(0,4))
 		self.prev_field["yscrollcommand"] = self.prev_scrollbar.set
-		
+
 		self.UpdatePreview("event_dummy")
 
 
@@ -266,7 +265,7 @@ class JSON_text_Generator(object):
 		Button(self.formatting_info, text="§o", font=("Minecraft Regular", 9), foreground="#000", background="#fff", command=lambda: self.text_field.insert(INSERT, "§o")).grid(row=21, column=0, sticky=W+E, pady=(0,1), padx=1)
 		Button(self.formatting_info, text="§r", font=("Minecraft Regular", 9), foreground="#000", background="#fff", command=lambda: self.text_field.insert(INSERT, "§r")).grid(row=22, column=0, sticky=W+E, pady=(0,1), padx=1)
 		Button(self.formatting_info, text="\\n", font=("Minecraft Regular", 9), foreground="#000", background="#fff", command=lambda: self.text_field.insert(INSERT, "\\n")).grid(row=23, column=0, sticky=W+E, pady=(0,1), padx=1)
-		
+
 		for i in range(0, 23):
 			if i <= 14:
 				if i in (0,1,2,3,4,5,8,9):
@@ -311,7 +310,7 @@ class JSON_text_Generator(object):
 		dialogue.wait_visibility()
 		dialogue.grab_set()
 		dialogue.wait_window()
-		
+
 
 	def save_input(self):
 		self.user_input = self.text_field.get(1.0,END)[:-1].replace("\n", "\\n").rstrip("\\n")

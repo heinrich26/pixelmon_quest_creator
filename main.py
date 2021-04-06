@@ -156,12 +156,23 @@ types = ["Normal","Fire","Fighting","Water","Flying","Grass","Poison","Electric"
 
 def center_window(window):
 	window.update()
-	windowWidth, windowHeight = window.geometry().split("+")[0].split("x")
-	print("Width",windowWidth,"Height",windowHeight)
-
-	# Gets both half the screen width/height and window width/height
-	positionRight = int(root.winfo_screenwidth()/2 - int(windowWidth)/2)
-	positionDown = int(root.winfo_screenheight()/2 - int(windowHeight)/2)
+	windowWidth = window.winfo_width()
+	windowHeight = window.winfo_height()
+	screenWidth = root.winfo_screenwidth()
+	screenHeight = root.winfo_screenheight()
+	if window != root:
+		window.update()
+		parent = root.nametowidget(window.winfo_parent())
+		x = parent.winfo_x()
+		y = parent.winfo_y()
+		parentWidth = parent.winfo_width()
+		parentHeight = parent.winfo_height()
+		positionRight = max(min(x + int((parentWidth - windowWidth)/2), screenWidth - windowWidth), 0)
+		positionDown = max(min(y + int((parentHeight - windowHeight)/2), screenHeight - windowHeight), 0)
+	else:
+		# Gets both half the screen width/height and window width/height
+		positionRight = int(screenWidth/2 - int(windowWidth)/2)
+		positionDown = int(screenHeight/2 - int(windowHeight)/2)
 
 	# Positions the window in the center of the page.
 	window.geometry("+{}+{}".format(positionRight, positionDown))
@@ -184,6 +195,7 @@ def new_string_name():
 	string_name_selector_window.title("Create new String")
 	string_name_selector_window.transient(root)
 	string_name_selector_window.wait_visibility()
+	center_window(string_name_selector_window)
 	string_name_selector_window.grab_set()
 	string_name_selector_window.bind_all("<Return>", lambda event: new_string(new_string_name.get(), string_name_selector_window, custom=True))
 	ttk.Label(string_name_selector_window, text="Enter unique Identifier for new String:").grid(row=0, column=0, sticky=N+W, padx=4, pady=4)
@@ -387,7 +399,8 @@ class Stage:
 		self.edit_window.transient(root)
 		self.edit_window.grab_set()
 		self.edit_window.title("Choose Objective Type:")
-		self.edit_window.geometry("%dx%d+%d+%d" % (this_w, this_h, int(max(root.winfo_x()+(root.winfo_width()-this_w)/2, 0)), int(max(root.winfo_y()+(root.winfo_height()-this_h)/2, 0))))
+		self.edit_window.geometry("650x200")
+		center_window(self.edit_window)
 		self.edit_window.columnconfigure(0, minsize=178)
 		self.edit_window.columnconfigure((1,2), minsize=150, weight=1)
 		self.edit_window.rowconfigure(2, weight=1)
@@ -404,7 +417,7 @@ class Stage:
 		ttk.Label(self.edit_window, textvariable=self.options_opt, justify=LEFT, wraplength=240).grid(row=1, column=2, sticky=W)
 		self.var.trace("w", self.get_options)
 		ttk.Button(self.edit_window, text="Apply", command=self.set_objective_type).grid(row=3, column=2, sticky=E+S, pady=(0,4))
-		ttk.Button(self.edit_window, text="Cancel", command=self.edit_window.destroy).grid(row=3, column=3, sticky=W+S, pady=(0,4), padx=4)
+		ttk.Button(self.edit_window, text="Cancel", command=lambda:[self.edit_window.grad_release(), self.edit_window.destroy()]).grid(row=3, column=3, sticky=W+S, pady=(0,4), padx=4)
 
 	def rm(self):
 		if len(stages) != 1:
@@ -421,6 +434,7 @@ class Stage:
 	def set_objective_type(self):
 		self.objectives.append(eval(self.var.get())(self))
 		self.objectives[-1].identifier = len(self.objectives)-1
+		self.edit_window.grab_release()
 		self.edit_window.destroy()
 
 	def uuid_input_validator(self, wholeString, widget, newChars, action):
@@ -486,6 +500,7 @@ class Objective(Stage):
 			print()
 		self.entries = []
 		self.parent = parent
+		self.fresh = True
 
 		# var assignment
 		global types
@@ -531,19 +546,24 @@ class Objective(Stage):
 		this_w = 600
 		this_h = 160
 		self.edit_window = Toplevel(root)
-		self.edit_window.grab_set()
+		self.edit_window.attributes("-alpha", "0.0")
+		self.edit_window.geometry("600x160")
+		center_window(self.edit_window)
 		self.edit_window.transient(root)
-		self.edit_window.rowconfigure(1, weight=1)
+		self.edit_window.grab_set()
 		self.edit_window.title("Edit Objective: " + self.__class__.__name__)
-		self.edit_window.geometry("+%d+%d" % (int(max(root.winfo_x()+(root.winfo_width()-this_w)/2, 0)), int(max(root.winfo_y()+(root.winfo_height()-this_h)/2, 0))))
+		self.edit_window.protocol("WM_DELETE_WINDOW", self.on_close)
+		self.edit_window.rowconfigure(1, weight=1)
+		self.edit_window.columnconfigure(3, weight=1)
 		self.edit_window.minsize(this_w, this_h)
+		self.edit_window.focus_set()
+		self.edit_window.resizable(False, False)
+		self.edit_window.attributes("-alpha", "1.0")
 		if requirements:
 			ttk.Label(self.edit_window, text="Required Arguments:").grid(row=0, column=0, sticky=W, pady=(2,4))
 		if optcol:
 			ttk.Label(self.edit_window, text="Optional Arguments:").grid(row=0, column=optcol, sticky=W, pady=(2,4))
 		ttk.Button(self.edit_window, command=self.save_objective_changes, text="Save Changes").grid(row=4, column=3, pady=(10,4), padx=4, sticky=E+S)
-		self.edit_window.focus_set()
-		self.edit_window.resizable(False, False)
 
 	def save_objective_changes(self):
 		self.edit_window.destroy()
@@ -551,6 +571,14 @@ class Objective(Stage):
 			root.deiconify()
 		except:
 			pass
+
+
+	def on_close(self, event):
+		discard = messagebox.askyesnocancel("Unsaved Changes", "Do you want to quit and discard\nyour unsaved Changes?")
+		if self.fresh and discard:
+			self.event.accept()
+
+
 
 	def item_entry(self, column, parent="", columns=1):
 		if parent == "":
@@ -821,6 +849,7 @@ class Objective(Stage):
 		self.pokemon_inserter_growths_selector.bind("<<ListboxSelect>>", self.set_growths_selection)
 		self.pokemon_inserter_natures_selector.bind("<<ListboxSelect>>", self.set_natures_selection)
 
+
 	def inserter_selector_entry(self, column, parent="", columns=1):
 		if parent == "":
 			parent = self.edit_window
@@ -837,16 +866,27 @@ class Objective(Stage):
 		self.inserter_selector = ttk.OptionMenu(self.inserter_selector_frame, self.selected_inserter, self.selected_inserter.get(), *self.selectable_inserters)
 		self.inserter_selector.grid(row=1, column=0, sticky=E+W)
 		self.inserter_selector["menu"].add_command(label="New Inserter", command=self.create_new_inserter)
-		# self.selected_inserter.trace("w", self.create_new_inserter)
+		self.selected_inserter.trace("w", self.update_edit_inserter_button)
+
+		# button to edit selected inserter
+		self.edit_inserter_btn = ttk.Button(self.inserter_selector_frame, width=20, command=lambda: self.inserter_by_name().edit_objective(creator=self))
+		self.edit_inserter_btn.grid(row=1, column=1, sticky=W)
+		self.update_edit_inserter_button()
+
 
 		self.inserter_selector_frame.grid(row=1, column=column, columnspan=columns, pady=4, padx=(4,0), sticky=N+W)
 
 	def create_new_inserter(self, *args):
-		# if self.selected_inserter.get() != self.selected_inserter_old and self.selected_inserter.get() == "New Inserter":
 		self.parent.objectives.append(NPC_Inserter(self.parent))
 		self.parent.objectives[-1].identifier = len(self.parent.objectives)
 		self.parent.objectives[-1].edit_objective(creator=self)
-		#self.selected_inserter_old = self.selected_inserter.get()
+
+
+	def update_edit_inserter_button(self, *args):
+		if self.selected_inserter.get() == "Select Inserter":
+			self.edit_inserter_btn["state"] = DISABLED
+		else:
+			self.edit_inserter_btn["state"] = NORMAL
 
 
 	def count_entry(self, column, parent="", columns=1):
@@ -945,11 +985,11 @@ class Objective(Stage):
 		def one_out_two_swap(*args):
 			if self.switch_var.get() != self.switch_var_old:
 				if self.switch_var.get() == "first":
-					getattr(self, entry_two.lower() + "_frame").destroy()
-					method1(0, self.one_out_two_entrys_frame, 2)
+					frame2.lower(self.view_block)
+					frame1.lift(self.view_block)
 				else:
-					getattr(self, entry_one.lower() + "_frame").destroy()
-					method2(0, self.one_out_two_entrys_frame, 2)
+					frame1.lower(self.view_block)
+					frame2.lift(self.view_block)
 				self.switch_var_old = self.switch_var.get()
 
 		self.one_out_two_entrys_frame = ttk.Frame(self.edit_window)
@@ -958,6 +998,14 @@ class Objective(Stage):
 		method1 = getattr(self, entry_one.lower()+"_entry")
 		method2 = getattr(self, entry_two.lower()+"_entry")
 		method1(0, self.one_out_two_entrys_frame, 2)
+		method2(0, self.one_out_two_entrys_frame, 2)
+		frame1 = getattr(self, entry_one.lower() + "_frame")
+		frame2 = getattr(self, entry_two.lower() + "_frame")
+
+		# frame to make background solid
+		self.view_block = ttk.Frame(self.one_out_two_entrys_frame)
+		self.view_block.grid(row=1, column=0, columnspan=2, sticky=E+W+N+S)
+		frame1.lift(self.view_block)
 		self.switch_var.trace("w", one_out_two_swap)
 		button1 = Radiobutton(self.one_out_two_entrys_frame, variable=self.switch_var, indicatoron=False, text=entry_one, value="first")
 		button1.grid(row=0, column=0,sticky=E+W, padx=(2,0), pady=2)
@@ -980,11 +1028,22 @@ class Objective(Stage):
 
 		self.identifier_frame.grid(row=1, column=column, columnspan=columns, pady=4, padx=(4,0), sticky=N+W)
 
+	def inserter_by_name(self):
+		global inserters
+		if self.selected_inserter.get() != "Select Inserter":
+			for inserter in inserters:
+				if inserter.name == self.selected_inserter.get():
+					return inserter
+		else:
+			return "Select Inserter"
+
+
 class NPC_Inserter(Objective):
 	def __init__(self, parent):
 		global identifiers
 		super().__init__(parent)
 		self.name = "unknown_inserter"
+		self.fresh = True
 		self.inserter_type = StringVar(value="NPC")
 		self.inserter_mode = StringVar(value="Time")
 		self.inserter_mode_old = "Time"
@@ -999,17 +1058,25 @@ class NPC_Inserter(Objective):
 		self.edit_window.title("Edit Inserter: " + self.name)
 		self.identifier_entry(0)
 		self.inserter_entry(1)
+		self.fresh = False
 
 	def save_objective_changes(self):
 		identifier = self.identifier_input_field.get()
-		if identifier != "":
-			self.name = identifier
-			if self.creator:
-				self.creator.inserter_selector["menu"].add_command(label=self.name, command=_setit(self.creator.selected_inserter, self.name))
-				self.creator.selected_inserter.set(self.name)
-			super().save_objective_changes()
-		else:
+		if identifier == "":
 			messagebox.showerror(title="Missing Input", message="Please enter an Identifier\nfor your Inserter!")
+		elif identifier in [inserter.name for inserter in inserters if inserter != self]:
+			messagebox.showerror(title="Invalid Identifier", message="This Identifier already exsists,\nplease enter another one!")
+		else:
+			if identifier != self.name and self.creator:
+				try:
+					index = self.creator.inserter_selector["menu"].index(self.name)
+					self.creator.inserter_selector["menu"].delete(index)
+				except:
+					pass
+				self.creator.inserter_selector["menu"].add_command(label=identifier, command=_setit(self.creator.selected_inserter, identifier))
+				self.creator.selected_inserter.set(identifier)
+			self.name = identifier
+			super().save_objective_changes()
 
 
 class BLOCKER(Objective):
@@ -1018,7 +1085,9 @@ class BLOCKER(Objective):
 
 	def edit_objective(self):
 		super().edit_objective(requirements=False)
-		ttk.Label(self.edit_window, text="There's nothing to edit here!").grid(row=1, column=0)
+		self.edit_window.columnconfigure(0, weight=1)
+		self.edit_window.columnconfigure(3, weight=0)
+		ttk.Label(self.edit_window, text="There's nothing to edit here!").grid(row=1, column=0, columnspan=3)
 
 class FOLLOWTHROUGH(Objective):
 	def __init__(self, parent):
@@ -1044,11 +1113,7 @@ class DIALOGUE(Objective):
 	def save_objective_changes(self):
 		global inserters
 		print("hello there")
-		if self.selected_inserter.get() != "Select Inserter":
-			for inserter in inserters:
-				if inserter.name == self.selected_inserter.get():
-					self.inserter = inserter
-					break
+		self.inserter = self.inserter_by_name()
 		super().save_objective_changes()
 
 	def makestr(self):
