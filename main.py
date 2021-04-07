@@ -571,12 +571,15 @@ class Objective(Stage):
 			root.deiconify()
 		except:
 			pass
+		self.fresh = False
 
 
-	def on_close(self, event):
+	def on_close(self):
 		discard = messagebox.askyesnocancel("Unsaved Changes", "Do you want to quit and discard\nyour unsaved Changes?")
-		if self.fresh and discard:
-			self.event.accept()
+		if discard:
+			self.edit_window.destroy()
+		elif discard == False:
+			self.save_objective_changes()
 
 
 
@@ -1052,13 +1055,22 @@ class NPC_Inserter(Objective):
 		self.inserter_times = StringVar(value="0")
 		inserters.append(self)
 
+
 	def edit_objective(self, creator=None):
 		self.creator = creator
 		super().edit_objective(requirements=False)
 		self.edit_window.title("Edit Inserter: " + self.name)
 		self.identifier_entry(0)
 		self.inserter_entry(1)
-		self.fresh = False
+
+	def on_close(self):
+		if self.identifier_input_field.get() == "" and self.fresh:
+			self.edit_window.destroy()
+			self.rm()
+		elif self.name != self.identifier_input_field.get():
+			super().on_close()
+			if not self.edit_window.winfo_exists() and self.fresh:
+				self.rm()
 
 	def save_objective_changes(self):
 		identifier = self.identifier_input_field.get()
