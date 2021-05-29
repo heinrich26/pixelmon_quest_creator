@@ -23,6 +23,7 @@ from json_text_generator import JSON_text_Generator
 stages = []
 strings = []
 inserters = []
+pokemon_inserters = []
 final = {}
 minimized = False
 
@@ -61,8 +62,8 @@ objective_names = [
 	"STRUCTURE",
 	"TILEENTITY_VICINITY",
 	"WORLD_TIME",
-	"NPC_Inserter",
-	"POKEMON_Inserter"
+	"NPC_INSERTER",
+	"POKEMON_INSERTER"
 ]
 objective_data_req = [
 	"<x1> <z1> <x2> <z2> <dimension>",
@@ -518,10 +519,12 @@ class Objective(Stage):
 
 		# building the edit button
 		self.constructor_box = ttk.Frame(self.parent.objectives_box)
-		self.constructor_box.pack(fill=BOTH)
-		ttk.Button(self.constructor_box, text=self.__class__.__name__, command=self.edit_objective, width=20).grid(sticky=N+S, pady=1)
+		self.constructor_box.pack(fill=BOTH, expand=True)
+		self.constructor_box.columnconfigure(0, weight=1)
+		self.menu_button = ttk.Button(self.constructor_box, text=self.__class__.__name__, command=self.edit_objective)
+		self.menu_button.grid(sticky=N+S+E+W, pady=1)
 		self.delete_button = ttk.Button(self.constructor_box, image=delete, command=self.rm)
-		self.delete_button.grid(row=0, column=1, padx=(2,0), pady=1)
+		self.delete_button.grid(row=0, column=1, padx=(2,0), pady=1, sticky=E)
 		self.delete_tooltip = Delete_Tooltip(self.delete_button, text="Delete this objective")
 
 		# validations
@@ -542,20 +545,20 @@ class Objective(Stage):
 		self.parent.objectives.remove(self)
 		del self
 
-	def edit_objective(self, optcol=None, requirements=True):
+	def edit_objective(self, optcol=None, requirements=True, save_btn_col=3, title=None):
 		this_w = 600
 		this_h = 160
+		if not title: title = "Edit Objective: " + self.__class__.__name__
 		self.edit_window = Toplevel(root)
 		self.edit_window.attributes("-alpha", "0.0")
 		self.edit_window.geometry("600x160")
 		center_window(self.edit_window)
 		self.edit_window.transient(root)
 		self.edit_window.grab_set()
-		self.edit_window.title("Edit Objective: " + self.__class__.__name__)
+		self.edit_window.title(title)
 		self.edit_window.protocol("WM_DELETE_WINDOW", self.on_close)
 		self.edit_window.rowconfigure(1, weight=1)
 		self.edit_window.columnconfigure(3, weight=1)
-		self.edit_window.minsize(this_w, this_h)
 		self.edit_window.focus_set()
 		self.edit_window.resizable(False, False)
 		self.edit_window.attributes("-alpha", "1.0")
@@ -563,7 +566,8 @@ class Objective(Stage):
 			ttk.Label(self.edit_window, text="Required Arguments:").grid(row=0, column=0, sticky=W, pady=(2,4))
 		if optcol:
 			ttk.Label(self.edit_window, text="Optional Arguments:").grid(row=0, column=optcol, sticky=W, pady=(2,4))
-		ttk.Button(self.edit_window, command=self.save_objective_changes, text="Save Changes").grid(row=4, column=3, pady=(10,4), padx=4, sticky=E+S)
+		ttk.Button(self.edit_window, command=self.save_objective_changes, text="Save Changes").grid(row=4, column=save_btn_col, pady=(10,4), padx=4, sticky=E+S)
+
 
 	def save_objective_changes(self):
 		self.edit_window.destroy()
@@ -582,7 +586,6 @@ class Objective(Stage):
 			self.save_objective_changes()
 
 
-
 	def item_entry(self, column, parent="", columns=1):
 		if parent == "":
 			parent = self.edit_window
@@ -592,6 +595,7 @@ class Objective(Stage):
 			ttk.Label(self.item_frame, text="Item:", ).grid()
 		ttk.Entry(self.item_frame, textvariable=self.item).grid(row=0,column=1)
 		self.item_tooltip = CreateToolTip(self.item_frame, text="Enter a <namespace>:item")
+
 
 	def name_entry(self, column, parent="", columns=1):
 		if parent == "":
@@ -605,6 +609,7 @@ class Objective(Stage):
 		self.name_var.insert(10, self.name)
 		self.name_var.grid(row=1,column=1)
 
+
 	def uuid_entry(self, column, parent="", columns=1):
 		if parent == "":
 			parent = self.edit_window
@@ -615,23 +620,21 @@ class Objective(Stage):
 		ttk.Entry(self.uuid_frame, textvariable=self.uuid, validate='key', validatecommand=(self.uuid_input_validation, '%P', '%W', '%S', '%d'), width=40).grid(row=1,column=1)
 		self.uuid_tooltip = CreateToolTip(self.uuid_frame, text="Enter a UUID")
 
-	def time_validation(self, newStr):
+
+	def time_validation(self, newStr, widget):
 		if newStr.isnumeric():
-			if 0 <= int(newStr) <= 24000:
-				return True
-			else:
-				return False
+			root.nametowidget(widget)['style'] = 'TEntry'
+			return True
+		elif newStr == "":
+			root.nametowidget(widget)['style'] = 'Red.TEntry'
+			return True
 		else:
-			try:
-				if newStr.endswith(","):
-					newStr = newStr[0:-1]
-				time_list = newStr.split(",")
-				for x in time_list:
-					if not 0 <= int(x) <= 24000:
-						return False
-				return True
-			except:
-				return False
+			for time in newStr.rstrip(",").split(","):
+				if not time.isnumeric():
+					return False
+			root.nametowidget(widget)['style'] = 'TEntry'
+			return True
+
 
 	def dex_range_validator(self, newStr, widget):
 		if len(newStr) >= 8:
@@ -683,14 +686,11 @@ class Objective(Stage):
 				return True
 		return False
 
+
 	def dex_number_validator(self, newStr, widget):
-		if newStr == "" or newStr in ("an", "y", "n", "a", "ny", "ay"):
-			root.nametowidget(widget)['style'] = 'Red.TEntry'
-			try:
-				self.dex_range_error.hide()
-			except:
-				pass
-			return True
+		if newStr.endswith("-"): newStr = newStr[0:-1]
+		if newStr.startswith("-"): newStr = newStr[1:]
+
 		if newStr == "any":
 			root.nametowidget(widget)['style'] = 'TEntry'
 			try:
@@ -698,7 +698,15 @@ class Objective(Stage):
 			except:
 				pass
 			return True
-		if newStr.isnumeric():
+		elif newStr == "" or newStr in "any":
+			print("leer o. in any")
+			root.nametowidget(widget)['style'] = 'Red.TEntry'
+			try:
+				self.dex_range_error.hide()
+			except:
+				pass
+			return True
+		elif newStr.isnumeric():
 			if 0 <= int(newStr) <= 898:
 				root.nametowidget(widget)['style'] = 'TEntry'
 				try:
@@ -709,11 +717,9 @@ class Objective(Stage):
 			else:
 				return False
 		else:
-			try:
-				if newStr.endswith(";"):
-					newStr = newStr[0:-1]
-				dex_number_list = newStr.split(";")
-				for x in dex_number_list:
+			dex_number_list = newStr.strip(",").split(",")
+			for x in dex_number_list:
+				if x.isnumeric():
 					if not 0 <= int(x) <= 898:
 						root.nametowidget(widget)['style'] = 'Red.TEntry'
 						try:
@@ -721,24 +727,40 @@ class Objective(Stage):
 						except:
 							self.dex_range_error=Arrowed_Tooltip(widget, text="Dex entries out of range!")
 						self.dex_range_error.show(text="Dex entries out of range!")
-						return True
-					if dex_number_list.count(x) != 1:
+				elif x.replace("-", "", 1).isnumeric():
+					print(x)
+					range = x.split("-", 1)
+					try:
+						if int(range[1]) <= int(range[0]):
+							root.nametowidget(widget)['style'] = 'Red.TEntry'
+						else:
+							root.nametowidget(widget)['style'] = 'TEntry'
+					except:
 						root.nametowidget(widget)['style'] = 'Red.TEntry'
-						try:
-							self.dex_range_error
-						except:
-							self.dex_range_error=Arrowed_Tooltip(widget, text="Dex entries should not repeat!")
-						self.dex_range_error.show(text="Dex entries should not repeat!")
-						return True
+					try:
+						self.dex_range_error.hide()
+					except:
+						pass
+				else:
+					return False
 
-				root.nametowidget(widget)['style'] = 'TEntry'
-				try:
-					self.dex_range_error.hide()
-				except:
-					pass
-				return True
+				# detect repetitions
+				if dex_number_list.count(x) != 1:
+					root.nametowidget(widget)['style'] = 'Red.TEntry'
+					try:
+						self.dex_range_error
+					except:
+						self.dex_range_error=Arrowed_Tooltip(widget, text="Dex entries should not repeat!")
+					self.dex_range_error.show(text="Dex entries should not repeat!")
+			return True
+
+			root.nametowidget(widget)['style'] = 'TEntry'
+			try:
+				self.dex_range_error.hide()
 			except:
-				return False
+				pass
+			return True
+
 
 	def identifier_validation(self, string, widget):
 		if string == "":
@@ -761,26 +783,40 @@ class Objective(Stage):
 				pass
 		return valid
 
-	def inserter_entry(self, column, parent="", columns=1):
-		if parent == "":
-			parent = self.edit_window
-		self.inserter_frame = ttk.Frame(parent)
-		self.inserter_frame.columnconfigure(0, minsize=83)
-		if parent == self.edit_window:
-			ttk.Label(self.inserter_frame, text="Inserter:", ).grid(sticky=W)
-		ttk.Label(self.inserter_frame, text="Syntax: !#<type>,<mode>,<chance>,[range],[times...]\n").grid(row=2, column=0, columnspan=5)
-		ttk.OptionMenu(self.inserter_frame, self.inserter_type, self.inserter_type.get(), *["NPC","Pixelmon"]).grid(row=1, column=0, sticky=E+W)
-		ttk.OptionMenu(self.inserter_frame, self.inserter_mode, self.inserter_mode.get(), *["Time","Spawn"]).grid(row=1, column=1)
-		self.inserter_mode.trace("w", self.inserter_mode_swap)
-		self.inserter_chance_entry = ttk.Entry(self.inserter_frame, textvariable=self.inserter_chance, validate='key', validatecommand=(self.chance_validation, "%P", "%W"), width=10)
-		self.inserter_chance_entry.grid(row=1, column=2)
-		self.inserter_range_entry = ttk.Entry(self.inserter_frame, textvariable=self.inserter_range, validate="key", validatecommand=(int_validation, "%S"), width=10)
-		self.inserter_range_entry.grid(row=1, column=3)
-		self.inserter_times_entry = ttk.Entry(self.inserter_frame, textvariable=self.inserter_times, validate="key", validatecommand=(self.time_validation, "%P"), width=10)
-		self.inserter_times_entry.grid(row=1, column=4)
-		self.inserter_tooltip = CreateToolTip(self.inserter_frame, text="Enter an inserter\nInserters only require to be defined once and can be reused")
 
-		self.inserter_frame.grid(row=1, column=column, columnspan=columns, pady=4, padx=(4,0), sticky=N+W)
+	def inserter_entry(self, column, parent="", columns=1):
+		if parent == "": parent = self.edit_window
+		self.inserter_frame = ttk.Frame(parent)
+
+		ttk.Label(self.inserter_frame, text="Mode:").grid(row=0, column=0, sticky=W)
+		ttk.Label(self.inserter_frame, text="Chance:").grid(row=0, column=1, sticky=W)
+
+		self.ranges_label = ttk.Label(self.inserter_frame, text="Range:")
+		self.ranges_label.grid(row=0, column=2, sticky=W)
+
+		self.times_label = ttk.Label(self.inserter_frame, text="Time(s):")
+		self.times_label.grid(row=0, column=3, sticky=W)
+
+		self.mode_menu = ttk.OptionMenu(self.inserter_frame, self.inserter_mode, self.inserter_mode.get(), *["Time","Spawn"])
+		self.mode_menu.grid(row=1, column=0)
+		self.inserter_mode.trace("w", self.inserter_mode_swap)
+
+		self.inserter_chance_entry = ttk.Entry(self.inserter_frame, textvariable=self.inserter_chance, validate='key', validatecommand=(self.chance_validation, "%P", "%W"), width=10)
+		self.inserter_chance_entry.grid(row=1, column=1)
+		self.inserter_range_entry = ttk.Entry(self.inserter_frame, textvariable=self.inserter_range, validate="key", validatecommand=(int_validation, '%P', '%W'), width=10)
+		self.inserter_range_entry.grid(row=1, column=2)
+		self.inserter_times_entry = ttk.Entry(self.inserter_frame, textvariable=self.inserter_times, validate="key", validatecommand=(self.time_validation, "%P", "%W"), width=10)
+		self.inserter_times_entry.grid(row=1, column=3)
+
+		#tooltips
+		# self.type_tooltip = CreateToolTip(self.type_menu, text="Whether to appear on NPCs or Pixelmon")
+		self.mode_tooltip = CreateToolTip(self.mode_menu, text="The way the Quest appears. Either\non Spawn, or at specific Times")
+		self.chance_tooltip = CreateToolTip(self.inserter_chance_entry, text="Chance for the Quest\nto appear on a NPC")
+		self.range_tooltip = CreateToolTip(self.inserter_range_entry, text="Range within the player must be\nfor the Quest to appear on a NPC")
+		self.times_tooltip = CreateToolTip(self.inserter_times_entry, text="Daytimes (in ticks) at which\nthe Quest can appear")
+
+		self.inserter_frame.grid(row=1, column=column, columnspan=columns, pady=4, padx=4, sticky=N+W)
+
 
 	def pokemon_inserter_entry(self, column, parent="", columns=1):
 		global growths
@@ -788,22 +824,22 @@ class Objective(Stage):
 		if parent == "":
 			parent = self.edit_window
 		self.pokemon_inserter_frame = ttk.Frame(parent)
-		self.pokemon_inserter_frame.grid(row=1, column=column, columnspan=columns, pady=4, padx=(4,0), sticky=N+W)
+		self.pokemon_inserter_frame.grid(row=1, column=column, columnspan=columns, pady=4, padx=4, sticky=N+W)
 		self.pokemon_inserter_frame.columnconfigure(1, minsize=141)
 		self.pokemon_inserter_frame.columnconfigure(0, minsize=88)
 		if parent == self.edit_window:
-			ttk.Label(self.pokemon_inserter_frame, text="Inserter:", justify=LEFT).grid(row=0, column=0, sticky=W)
-			self.pokemon_inserter_mode_desc = StringVar(value="Dex IDs split by \';\'")
+			ttk.Label(self.pokemon_inserter_frame, text="Mode:", justify=LEFT).grid(row=0, column=0, sticky=W)
+			self.pokemon_inserter_mode_desc = StringVar(value="Dex IDs and/or Ranges:")
 			ttk.Label(self.pokemon_inserter_frame, textvariable=self.pokemon_inserter_mode_desc, justify=LEFT).grid(row=0, column=1, sticky=W)
 			ttk.Label(self.pokemon_inserter_frame, text="Select Nature(s):").grid(row=0, column=2, sticky=W)
 			ttk.Label(self.pokemon_inserter_frame, text="Select Growth(s):").grid(row=0, column=3, sticky=W)
-		ttk.OptionMenu(self.pokemon_inserter_frame, self.pokemon_inserter_mode, self.pokemon_inserter_mode.get(), *["Dex","DexRange","Types"]).grid(row=1, column=0, sticky=N+W+E, padx=(0,2))
+		ttk.OptionMenu(self.pokemon_inserter_frame, self.pokemon_inserter_mode, self.pokemon_inserter_mode.get(), *["Dex","Types"]).grid(row=1, column=0, sticky=N+W+E, padx=(0,2))
 
 		# natures selection
 		self.pokemon_inserter_natures_frame = ttk.Frame(self.pokemon_inserter_frame)
 		self.pokemon_inserter_natures_frame.grid(row=1, column=2)
 		self.pokemon_inserter_natures_scrollbar = ttk.Scrollbar(self.pokemon_inserter_natures_frame, orient=VERTICAL)
-		self.pokemon_inserter_natures_selector = Listbox(self.pokemon_inserter_natures_frame, yscrollcommand=self.pokemon_inserter_natures_scrollbar.set, listvariable=self.selectable_natures, height=5, selectmode=MULTIPLE, exportselection=0)
+		self.pokemon_inserter_natures_selector = Listbox(self.pokemon_inserter_natures_frame, yscrollcommand=self.pokemon_inserter_natures_scrollbar.set, listvariable=self.selectable_natures, height=6, selectmode=MULTIPLE, exportselection=0)
 		self.pokemon_inserter_natures_selector.grid(row=0, column=0, sticky=N+E+S+W)
 		self.pokemon_inserter_natures_scrollbar.config(command=self.pokemon_inserter_natures_selector.yview)
 		self.pokemon_inserter_natures_scrollbar.grid(row=0, column=1, sticky=N+S)
@@ -815,7 +851,7 @@ class Objective(Stage):
 		self.pokemon_inserter_growths_frame = ttk.Frame(self.pokemon_inserter_frame)
 		self.pokemon_inserter_growths_frame.grid(row=1, column=3)
 		self.pokemon_inserter_growths_scrollbar = ttk.Scrollbar(self.pokemon_inserter_growths_frame, orient=VERTICAL)
-		self.pokemon_inserter_growths_selector = Listbox(self.pokemon_inserter_growths_frame, yscrollcommand=self.pokemon_inserter_growths_scrollbar.set, listvariable=self.selectable_growths, height=5, selectmode=MULTIPLE, exportselection=0)
+		self.pokemon_inserter_growths_selector = Listbox(self.pokemon_inserter_growths_frame, yscrollcommand=self.pokemon_inserter_growths_scrollbar.set, listvariable=self.selectable_growths, height=6, selectmode=MULTIPLE, exportselection=0)
 		self.pokemon_inserter_growths_selector.grid(row=0, column=0, sticky=N+E+S+W)
 		self.pokemon_inserter_growths_scrollbar.config(command=self.pokemon_inserter_growths_selector.yview)
 		self.pokemon_inserter_growths_scrollbar.grid(row=0, column=1, sticky=N+S)
@@ -824,12 +860,11 @@ class Objective(Stage):
 			self.pokemon_inserter_growths_selector.selection_set(item)
 
 		self.pokemon_inserter_dex_numbers_entry = ttk.Entry(self.pokemon_inserter_frame, textvariable=self.pokemon_inserter_dex_numbers, validate="key", validatecommand=(self.dex_number_validation, "%P", "%W"))
-		self.pokemon_inserter_dex_range_entry = ttk.Entry(self.pokemon_inserter_frame, textvariable=self.pokemon_inserter_dex_range, validate="key", validatecommand=(self.dex_range_validation, "%P", "%W"))
 
 		# type selection
 		self.pokemon_inserter_type_frame = ttk.Frame(self.pokemon_inserter_frame)
 		self.pokemon_inserter_type_scrollbar = ttk.Scrollbar(self.pokemon_inserter_type_frame, orient=VERTICAL)
-		self.pokemon_inserter_type_selector = Listbox(self.pokemon_inserter_type_frame, yscrollcommand=self.pokemon_inserter_type_scrollbar.set, listvariable=self.selectable_types, height=5, selectmode=MULTIPLE, exportselection=0)
+		self.pokemon_inserter_type_selector = Listbox(self.pokemon_inserter_type_frame, yscrollcommand=self.pokemon_inserter_type_scrollbar.set, listvariable=self.selectable_types, height=6, selectmode=MULTIPLE, exportselection=0)
 		self.pokemon_inserter_type_selector.grid(row=0, column=0, sticky=N+E+S+W)
 		self.pokemon_inserter_type_scrollbar.config(command=self.pokemon_inserter_type_selector.yview)
 		self.pokemon_inserter_type_scrollbar.grid(row=0, column=1, sticky=N+S)
@@ -840,10 +875,7 @@ class Objective(Stage):
 		# constructing the mode part
 		if self.pokemon_inserter_mode.get() == "Dex":
 			self.pokemon_inserter_dex_numbers_entry.grid(row=1, column=1, sticky=W+E+N)
-			self.pokemon_inserter_mode_desc.set("Dex IDs split by \';\'")
-		elif self.pokemon_inserter_mode.get() == "DexRange":
-			self.pokemon_inserter_dex_range_entry.grid(row=1, column=1, sticky=W+E+N)
-			self.pokemon_inserter_mode_desc.set("A Range of Dex IDs (a-b):")
+			self.pokemon_inserter_mode_desc.set("Dex IDs and/or Ranges:")
 		else:
 			self.pokemon_inserter_type_frame.grid(row=1, column=1)
 			self.pokemon_inserter_mode_desc.set("Select Type(s):")
@@ -857,6 +889,7 @@ class Objective(Stage):
 		if parent == "":
 			parent = self.edit_window
 		self.inserter_selector_frame = ttk.Frame(parent)
+		self.inserter_selector_frame.columnconfigure(0, weight=1)
 		if parent == self.edit_window:
 			ttk.Label(self.inserter_selector_frame, text="Inserter:").grid(row=0, column=0, sticky=W)
 		global inserters
@@ -872,15 +905,16 @@ class Objective(Stage):
 		self.selected_inserter.trace("w", self.update_edit_inserter_button)
 
 		# button to edit selected inserter
-		self.edit_inserter_btn = ttk.Button(self.inserter_selector_frame, width=20, command=lambda: self.inserter_by_name().edit_objective(creator=self))
-		self.edit_inserter_btn.grid(row=1, column=1, sticky=W)
+		self.edit_inserter_btn = ttk.Button(self.inserter_selector_frame, image=cogwheel_img, width=1, command=lambda: self.inserter_by_name().edit_objective(creator=self))
+		self.edit_inserter_btn.grid(row=1, column=1, sticky=E)
 		self.update_edit_inserter_button()
 
 
-		self.inserter_selector_frame.grid(row=1, column=column, columnspan=columns, pady=4, padx=(4,0), sticky=N+W)
+		self.inserter_selector_frame.grid(row=1, column=column, columnspan=columns, pady=4, padx=(4,0), sticky=N+W+E)
+
 
 	def create_new_inserter(self, *args):
-		self.parent.objectives.append(NPC_Inserter(self.parent))
+		self.parent.objectives.append(NPC_INSERTER(self.parent))
 		self.parent.objectives[-1].identifier = len(self.parent.objectives)
 		self.parent.objectives[-1].edit_objective(creator=self)
 
@@ -902,47 +936,38 @@ class Objective(Stage):
 			ttk.Label(self.count_frame, text="Amount:", justify=LEFT).grid(row=0, column=0, sticky=W)
 		ttk.Entry(self.count_frame, textvariable=self.count, width=4, validate="key", validatecommand=(natural_num_validation, "%P", "%W"), justify=RIGHT).grid(row=1, column=0, sticky=E+W)
 
+
 	def inserter_mode_swap(self, *args):
 		if not self.inserter_mode.get() == self.inserter_mode_old:
 			if self.inserter_mode.get() == "Time":
 				self.inserter_range_entry.grid(row=1, column=3)
 				self.inserter_times_entry.grid(row=1, column=4)
+				self.ranges_label.grid(row=0, column=3, sticky=W)
+				self.times_label.grid(row=0, column=4, sticky=W)
 			else:
 				self.inserter_range_entry.grid_forget()
 				self.inserter_times_entry.grid_forget()
+				self.ranges_label.grid_forget()
+				self.times_label.grid_forget()
 			self.inserter_mode_old = self.inserter_mode.get()
-			print(self.inserter_frame.winfo_width())
+
 
 	def pokemon_inserter_mode_swap(self, *args):
 		if not self.pokemon_inserter_mode.get() == self.pokemon_inserter_mode_old:
-			if self.pokemon_inserter_mode.get() == "DexRange":
-				self.pokemon_inserter_dex_range_entry.grid(row=1, column=1, sticky=W+E+N)
-				self.pokemon_inserter_type_frame.grid_forget()
-				self.pokemon_inserter_dex_numbers_entry.grid_forget()
-				self.pokemon_inserter_mode_desc.set("A Range of Dex IDs (a-b):")
-				try:
-					self.dex_range_error.hide()
-				except:
-					pass
-			elif self.pokemon_inserter_mode.get() == "Dex":
+			if self.pokemon_inserter_mode.get() == "Dex":
 				self.pokemon_inserter_dex_numbers_entry.grid(row=1, column=1, sticky=W+E+N)
 				self.pokemon_inserter_type_frame.grid_forget()
-				self.pokemon_inserter_dex_range_entry.grid_forget()
-				self.pokemon_inserter_mode_desc.set("Dex IDs split by \';\'")
-				try:
-					self.dex_range_error.hide()
-				except:
-					pass
+				self.pokemon_inserter_mode_desc.set("Dex IDs and/or Ranges:")
 			else:
 				self.pokemon_inserter_type_frame.grid(row=1, column=1)
 				self.pokemon_inserter_dex_numbers_entry.grid_forget()
-				self.pokemon_inserter_dex_range_entry.grid_forget()
 				self.pokemon_inserter_mode_desc.set("Select Type(s):")
 				try:
 					self.dex_range_error.hide()
 				except:
 					pass
 			self.pokemon_inserter_mode_old = self.pokemon_inserter_mode.get()
+
 
 	def set_type_selection(self, event):
 		selection = self.pokemon_inserter_type_selector.curselection()
@@ -957,6 +982,7 @@ class Objective(Stage):
 		else:
 			self.pokemon_inserter_type_old = selection
 
+
 	def set_growths_selection(self, event):
 		selection = self.pokemon_inserter_growths_selector.curselection()
 		if len(selection) >= 2 and 0 in selection:
@@ -969,6 +995,7 @@ class Objective(Stage):
 				self.pokemon_inserter_growths_old = selection[1:]
 		else:
 			self.pokemon_inserter_growths_old = selection
+
 
 	def set_natures_selection(self, event):
 		selection = self.pokemon_inserter_natures_selector.curselection()
@@ -1010,14 +1037,19 @@ class Objective(Stage):
 		self.view_block.grid(row=1, column=0, columnspan=2, sticky=E+W+N+S)
 		frame1.lift(self.view_block)
 		self.switch_var.trace("w", one_out_two_swap)
+
+		if entry_one == "inserter_selector": entry_one = "Inserter"
+		elif entry_two == "inserter_selector": entry_two = "Inserter"
 		button1 = Radiobutton(self.one_out_two_entrys_frame, variable=self.switch_var, indicatoron=False, text=entry_one, value="first")
 		button1.grid(row=0, column=0,sticky=E+W, padx=(2,0), pady=2)
 		button2 = Radiobutton(self.one_out_two_entrys_frame, variable=self.switch_var, indicatoron=False, text=entry_two, value="second")
 		button2.grid(row=0, column=1, sticky=E+W, padx=(0,2), pady=2)
 
+
 	def makestr(self):
 		string = self.__class__.__name__
 		return string
+
 
 	def identifier_entry(self, column, parent="", columns=1):
 		if parent == "":
@@ -1031,6 +1063,7 @@ class Objective(Stage):
 
 		self.identifier_frame.grid(row=1, column=column, columnspan=columns, pady=4, padx=(4,0), sticky=N+W)
 
+
 	def inserter_by_name(self):
 		global inserters
 		if self.selected_inserter.get() != "Select Inserter":
@@ -1041,13 +1074,19 @@ class Objective(Stage):
 			return "Select Inserter"
 
 
-class NPC_Inserter(Objective):
+	def fit_contents(self):
+		self.edit_window.update()
+		self.edit_window.geometry('{0}x{1}'.format(self.edit_window.winfo_reqwidth(), self.edit_window.winfo_reqheight()))
+		center_window(self.edit_window)
+
+
+class NPC_INSERTER(Objective):
 	def __init__(self, parent):
-		global identifiers
+		global inserters
 		super().__init__(parent)
+		self.menu_button.configure(image=npc_img, compound=LEFT)
 		self.name = "unknown_inserter"
 		self.fresh = True
-		self.inserter_type = StringVar(value="NPC")
 		self.inserter_mode = StringVar(value="Time")
 		self.inserter_mode_old = "Time"
 		self.inserter_chance = DoubleVar(value=0.5)
@@ -1058,10 +1097,12 @@ class NPC_Inserter(Objective):
 
 	def edit_objective(self, creator=None):
 		self.creator = creator
-		super().edit_objective(requirements=False)
-		self.edit_window.title("Edit Inserter: " + self.name)
+		super().edit_objective(requirements=False, save_btn_col=1, title="Edit NPC Inserter: " + self.name)
+		self.edit_window.iconphoto(False, npc_img)
 		self.identifier_entry(0)
 		self.inserter_entry(1)
+		self.fit_contents()
+
 
 	def on_close(self):
 		if self.identifier_input_field.get() == "" and self.fresh:
@@ -1071,6 +1112,9 @@ class NPC_Inserter(Objective):
 			super().on_close()
 			if not self.edit_window.winfo_exists() and self.fresh:
 				self.rm()
+		else:
+			self.edit_window.destroy()
+
 
 	def save_objective_changes(self):
 		identifier = self.identifier_input_field.get()
@@ -1079,6 +1123,7 @@ class NPC_Inserter(Objective):
 		elif identifier in [inserter.name for inserter in inserters if inserter != self]:
 			messagebox.showerror(title="Invalid Identifier", message="This Identifier already exsists,\nplease enter another one!")
 		else:
+			# update all referencing Objectives
 			if identifier != self.name and self.creator:
 				try:
 					index = self.creator.inserter_selector["menu"].index(self.name)
@@ -1090,10 +1135,107 @@ class NPC_Inserter(Objective):
 			self.name = identifier
 			super().save_objective_changes()
 
+	def makestr(self):
+		if self.name == "unknown_inserter": raise Exception("Unset Identifier", self)
+
+		mode = self.inserter_mode.get()
+		if mode == "Time":
+			string = "NPC_TIMED_INSERTER " + self.name + " " + str(self.inserter_chance.get()) + " " + str(self.inserter_range.get()) + " " + str(self.inserter_times.get())
+		else:
+			string = "NPC_SPAWN_INSERTER " + self.name + " " + str(self.inserter_chance.get())
+		return string
+
+
+class POKEMON_INSERTER(Objective):
+	def __init__(self, parent):
+		global pokemon_inserters
+		super().__init__(parent)
+		self.menu_button.configure(image=pokeball_img, compound=LEFT)
+		self.name = "unknown_inserter"
+		self.fresh = True
+		self.pokemon_inserter_mode = StringVar(value="Dex")
+		self.pokemon_inserter_mode_old = "Dex"
+		self.pokemon_inserter_dex_numbers = StringVar(value="any")
+		self.pokemon_inserter_type = [0]
+		self.pokemon_inserter_natures = [0]
+		self.pokemon_inserter_growths = [0]
+		pokemon_inserters.append(self)
+
+
+	def edit_objective(self, creator=None):
+		self.creator = creator
+		super().edit_objective(requirements=False, save_btn_col=1, title="Edit Pokemon Inserter: " + self.name)
+		self.edit_window.iconphoto(False, pokeball_img)
+		self.identifier_entry(0)
+		self.pokemon_inserter_entry(1)
+		self.fit_contents()
+
+
+	def on_close(self):
+		if self.identifier_input_field.get() == "" and self.fresh:
+			self.edit_window.destroy()
+			self.rm()
+		elif self.name != self.identifier_input_field.get():
+			super().on_close()
+			if not self.edit_window.winfo_exists() and self.fresh:
+				self.rm()
+		else:
+			self.edit_window.destroy()
+
+
+	def save_objective_changes(self):
+		identifier = self.identifier_input_field.get()
+		if identifier == "":
+			messagebox.showerror(title="Missing Input", message="Please enter an Identifier\nfor your Inserter!")
+		elif identifier in [inserter.name for inserter in inserters + pokemon_inserters if inserter != self]:
+			messagebox.showerror(title="Invalid Identifier", message="This Identifier already exsists,\nplease enter another one!")
+		else:
+			# save the stuff
+			if self.pokemon_inserter_mode.get() == "Types": self.pokemon_inserter_type = self.pokemon_inserter_type_selector.curselection()
+			self.pokemon_inserter_growths = self.pokemon_inserter_growths_selector.curselection()
+			self.pokemon_inserter_natures = self.pokemon_inserter_natures_selector.curselection()
+
+			# update all referencing Objectives
+			if identifier != self.name and self.creator:
+				try:
+					index = self.creator.inserter_selector["menu"].index(self.name)
+					self.creator.inserter_selector["menu"].delete(index)
+				except:
+					pass
+				self.creator.inserter_selector["menu"].add_command(label=identifier, command=_setit(self.creator.selected_inserter, identifier))
+				self.creator.selected_inserter.set(identifier)
+			self.name = identifier
+			super().save_objective_changes()
+
+	def makestr(self):
+		global types
+		global natures
+		global growths
+		string = self.__class__.__name__ + " "
+		inserter = "!#" + self.pokemon_inserter_mode.get() + ","
+		if self.pokemon_inserter_mode.get() == "Dex":
+			inserter += str(self.pokemon_inserter_dex_numbers.get()) + ","
+		elif 0 in self.pokemon_inserter_type:
+			inserter += "any,"
+		else:
+			inserter += ";".join([types[element-1] for element in self.pokemon_inserter_type]) + ","
+		if 0 in self.pokemon_inserter_natures:
+			inserter += "any,"
+		else:
+			inserter += ";".join([natures[element-1] for element in self.pokemon_inserter_natures]) + ","
+		if 0 in self.pokemon_inserter_growths:
+			inserter += "any"
+		else:
+			inserter += ";".join([growths[element-1] for element in self.pokemon_inserter_growths])
+		string += inserter + " " + self.count.get()
+		print(string)
+		return string
+
 
 class BLOCKER(Objective):
 	def __init__(self, parent):
 		super().__init__(parent)
+
 
 	def edit_objective(self):
 		super().edit_objective(requirements=False)
@@ -1113,34 +1255,18 @@ class DIALOGUE(Objective):
 	def __init__(self, parent):
 		super().__init__(parent)
 		self.choices = StringVar()
-		self.inserter_type = StringVar(value="NPC")
-		self.inserter_mode = StringVar(value="Time")
-		self.inserter_mode_old = "Time"
-		self.inserter_chance = DoubleVar(value=0.5)
-		self.inserter_range = IntVar(value=0)
-		self.inserter_times = StringVar(value="0")
 		self.switch_var = StringVar(value="first")
 		self.switch_var_old = "first"
 
 	def save_objective_changes(self):
 		global inserters
-		print("hello there")
 		self.inserter = self.inserter_by_name()
 		super().save_objective_changes()
 
 	def makestr(self):
-		string = self.__class__.__name__ + " "
+		string = "DIALOGUE "
 		if self.switch_var.get() == "first":
-			inserter = "!#" + self.inserter_type.get() + "," + self.inserter_mode.get() + "," + str(self.inserter_chance.get())
-			if self.inserter_mode.get() == "Time":
-				inserter += "," + str(self.inserter_range.get()) + ","
-				if self.inserter_times.get().isnumeric():
-					inserter += str(self.inserter_times.get())
-				else:
-					if self.inserter_times.get().endswith(","):
-						self.inserter_times.set(self.inserter_times.get()[0:-1])
-					inserter += str(self.inserter_times.get().split(",")).replace(" ", "").replace("'", "")
-			string += inserter
+			string += self.inserter.name
 			print(string)
 		else:
 			string += self.uuid.get()
@@ -1151,14 +1277,13 @@ class DIALOGUE(Objective):
 	def edit_objective(self):
 		super().edit_objective(optcol=1)
 		self.item_entry(1)
-		self.one_out_two_entrys(0, "Inserter_Selector", "UUID")
+		self.one_out_two_entrys(0, "inserter_selector", "UUID")
 
 class POKEMON_CAPTURE(Objective):
 	def __init__(self, parent):
 		self.pokemon_inserter_mode = StringVar(value="Dex")
 		self.pokemon_inserter_mode_old = "Dex"
 		self.pokemon_inserter_dex_numbers = StringVar(value="any")
-		self.pokemon_inserter_dex_range = StringVar(value="any")
 		self.pokemon_inserter_type = [0]
 		self.pokemon_inserter_natures = [0]
 		self.pokemon_inserter_growths = [0]
@@ -1178,8 +1303,6 @@ class POKEMON_CAPTURE(Objective):
 		inserter = "!#" + self.pokemon_inserter_mode.get() + ","
 		if self.pokemon_inserter_mode.get() == "Dex":
 			inserter += str(self.pokemon_inserter_dex_numbers.get()) + ","
-		elif self.pokemon_inserter_mode.get() == "DexRange":
-			inserter += str(self.pokemon_inserter_dex_range.get()) + ","
 		elif 0 in self.pokemon_inserter_type:
 			inserter += "any,"
 		else:
@@ -1198,7 +1321,6 @@ class POKEMON_CAPTURE(Objective):
 
 	def save_objective_changes(self):
 		if self.pokemon_inserter_mode.get() == "Types":
-			print(self.pokemon_inserter_type_frame.bbox(), self.pokemon_inserter_type_frame.winfo_width())
 			self.pokemon_inserter_type = self.pokemon_inserter_type_selector.curselection()
 		self.pokemon_inserter_growths = self.pokemon_inserter_growths_selector.curselection()
 		self.pokemon_inserter_natures = self.pokemon_inserter_natures_selector.curselection()
@@ -1282,6 +1404,8 @@ if PIL:
 	arrow_img = Image.open("src/icons/16/arrow_up.png")
 	arrow_down = ImageTk.PhotoImage(arrow_img.rotate(180))
 	arrow_up = ImageTk.PhotoImage(arrow_img)
+	arrow_left = ImageTk.PhotoImage(arrow_img.rotate(270))
+	arrow_right = ImageTk.PhotoImage(arrow_img.rotate(90))
 else:
 	arrow_up = PhotoImage(file="src/icons/16/arrow_up.png")
 	arrow_down = PhotoImage(file="src/icons/16/arrow_down.png")
@@ -1290,6 +1414,9 @@ else:
 
 delete = PhotoImage(file='src/icons/16/delete.png')
 delete_hover = PhotoImage(file='src/icons/16/delete_hover.png')
+pokeball_img = PhotoImage(file="src/icons/16/pokeball.png")
+npc_img = PhotoImage(file="src/icons/16/npc.png")
+cogwheel_img = PhotoImage(file="src/icons/16/cogwheel.png")
 
 # styles
 
@@ -1363,7 +1490,7 @@ bottom_frame = ttk.Frame(master)
 bottom_frame.grid(row=11, columnspan=2, sticky=S)
 ttk.Button(bottom_frame, text='Quit', command=root.quit).grid(column=0, sticky=S)
 ttk.Button(bottom_frame, text='Show', command=create_json).grid(row=0, column=1, sticky=S)
-ttk.Button(bottom_frame, text="BBox", command=lambda:print(sizes())).grid(column=3,row=0,sticky=S)
+ttk.Button(bottom_frame, text="BBox", command=lambda: print(sizes())).grid(column=3,row=0,sticky=S)
 minimizeButton = ttk.Button(bottom_frame, text='Show', command=lambda: minimize())
 minimizeButton.grid(row=0, column=2, sticky=S)
 
