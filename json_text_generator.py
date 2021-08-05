@@ -10,11 +10,12 @@ import threading
 import time
 import random
 import pyglet
+import os
 
 current_os = platform.system()
 
 if current_os == "Windows" or current_os == "Darwin":
-	pyglet.font.add_file("src/fonts/minecraft_font.ttf")
+	pyglet.font.add_file(os.path.join(os.getcwd(), "src/fonts/minecraft_font.ttf"))
 
 formatting_codes = {
 	"§0": "\"background:#fff;color:#000000;\"",
